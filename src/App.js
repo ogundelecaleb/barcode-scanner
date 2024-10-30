@@ -7,7 +7,7 @@ function App() {
   const [error, setError] = useState(null);
   const scannerRef = useRef(null);
   const [drugInfo, setDrugInfo] = useState("");
-  const [fdaInfo, setFdaInfo] = useState("")
+  const [fdaInfo, setFdaInfo] = useState("");
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -16,21 +16,20 @@ function App() {
 
     // Check if the number has exactly 12 digits
     if (numStr.length !== 12) {
-      throw new Error("Input number must have exactly 12 digits");
+      console.log("Input number must have exactly 12 digits");
     }
 
     // Remove the first and last character
-    const trimmedNumStr = numStr.slice(1, -1);
-
+    const trimmedNumStr = numStr.slice(2, -1);
     let formattedNdc = "";
 
     if (trimmedNumStr.length === 10) {
       // 10-digit format to 11-digit (5-4-2)
-      const part1 = strippedNdc.slice(0, 4).padStart(5, "0"); // First segment (5 digits)
-      const part2 = strippedNdc.slice(4, 7).padStart(4, "0"); // Second segment (4 digits)
-      const part3 = strippedNdc.slice(7).padStart(2, "0"); // Third segment (2 digits)
-      formattedNdc = `${part1}-${part2}-${part3}`;
-    } else if (strippedNdc.length === 11) {
+      formattedNdc = `${trimmedNumStr.slice(0, 4)}-${trimmedNumStr.slice(
+        4,
+        8
+      )}-${trimmedNumStr.slice(8)}`;
+    } else if (trimmedNumStr.length === 11) {
       // Already in the correct 11-digit format
       formattedNdc = `${strippedNdc.slice(0, 5)}-${strippedNdc.slice(
         5,
@@ -40,10 +39,13 @@ function App() {
       throw new Error("Invalid NDC code length.");
     }
 
+    setDrugInfo(formattedNdc);
+
     return formattedNdc;
   };
 
   const handleScanner = () => {
+    console.log(scannerRef.current)
     if (!scannerRef.current) {
       const html5QrcodeScanner = new Html5Qrcode("reader");
 
@@ -70,7 +72,7 @@ function App() {
         )
         .catch((err) => {
           setError("Failed to initialize scanner.");
-          console.error(err);
+          // console.error(err);
         });
 
       scannerRef.current = html5QrcodeScanner; // Store the scanner instance
@@ -79,9 +81,9 @@ function App() {
   const fetchDrugInfo = async (ndcCode) => {
     try {
       const response = await fetch(
-        `https://api.fda.gov/drug/ndc.json?search=openfda.package_ndc:"${formatNdcForOpenFda(
+        `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${formatNdcForOpenFda(
           ndcCode
-        )}"`
+        )}`
       );
       // const response = await fetch(
       //   `https://api.fda.gov/drug/ndc.json?search=product_ndc:0023-1145-01"`
@@ -89,30 +91,37 @@ function App() {
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
-        setDrugInfo(data.results[0]);
+        setDrugInfo( JSON.stringify(data.results[0]));
+        if (scannerRef.current) {
+              scannerRef.current.stop()
+              scannerRef.current = null;
+
+            }
       } else {
-        setFdaInfo(`No drug information found for this code.${formatNdcForOpenFda(
-          ndcCode
-        )}`);
+        setFdaInfo(
+          `No drug information found for this code.${formatNdcForOpenFda(
+            ndcCode
+          )}`
+        );
       }
     } catch (error) {
       setFdaInfo("Error fetching drug information.");
-      console.error(error);
+      // console.error(error);
     }
   };
 
   useEffect(() => {
     handleScanner();
-    // Cleanup on unmount
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current
-          .stop()
-          .catch((err) => console.error("Failed to stop scanner", err));
-      }
-    };
+//formatNdcForOpenFda("372960020283")
+    // // Cleanup on unmount
+    // return () => {
+    //   if (scannerRef.current) {
+    //     scannerRef.current
+    //       .stop()
+    //       .catch((err) => console.error("Failed to stop scanner", err));
+    //   }
+    // };
   }, []);
-  
 
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
@@ -126,11 +135,11 @@ function App() {
           Scanned Barcode: <strong>{barcodeData}</strong>
         </p>
       )}
+{drugInfo && (<button className="border" onClick={handleScanner}>Scan Again</button>)}
+
       {error && <p style={{ color: "red" }}>{error}</p>}
       {fdaInfo && <p style={{ color: "blue" }}>{fdaInfo}</p>}
       {drugInfo && <p style={{ color: "green" }}>{drugInfo}</p>}
-
-    
     </div>
   );
 }
