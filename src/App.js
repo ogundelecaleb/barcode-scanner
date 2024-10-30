@@ -7,6 +7,7 @@ function App() {
   const [error, setError] = useState(null);
   const scannerRef = useRef(null);
   const [drugInfo, setDrugInfo] = useState("");
+  const [fdaInfo, setFdaInfo] = useState("")
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -77,23 +78,23 @@ function App() {
   };
   const fetchDrugInfo = async (ndcCode) => {
     try {
-      // const response = await fetch(
-      //   `https://api.fda.gov/drug/ndc.json?search=product_ndc:"${formatNdcForOpenFda(
-      //     ndcCode
-      //   )}"`
-      // );
       const response = await fetch(
-        `https://api.fda.gov/drug/ndc.json?search=product_ndc:0023-1145-01"`
+        `https://api.fda.gov/drug/ndc.json?search=openfda.package_ndc:"${formatNdcForOpenFda(
+          ndcCode
+        )}"`
       );
+      // const response = await fetch(
+      //   `https://api.fda.gov/drug/ndc.json?search=product_ndc:0023-1145-01"`
+      // );
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
         setDrugInfo(data.results[0]);
       } else {
-        setError("No drug information found for this code.");
+        setFdaInfo("No drug information found for this code.");
       }
     } catch (error) {
-      setError("Error fetching drug information.");
+      setFdaInfo("Error fetching drug information.");
       console.error(error);
     }
   };
@@ -123,6 +124,7 @@ function App() {
         </p>
       )}
       {error && <p style={{ color: "red" }}>{error}</p>}
+      {fdaInfo && <p style={{ color: "blue" }}>{fdaInfo}</p>}
       {drugInfo && <p style={{ color: "green" }}>{drugInfo}</p>}
 
     
