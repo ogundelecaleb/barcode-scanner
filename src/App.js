@@ -113,8 +113,8 @@ function App() {
   };
 
   useEffect(() => {
-    //handleScanner();
-    formatNdcForOpenFda("372960020283")
+    handleScanner();
+    //formatNdcForOpenFda("372960020283")
     // // Cleanup on unmount
     // return () => {
     //   if (scannerRef.current) {
