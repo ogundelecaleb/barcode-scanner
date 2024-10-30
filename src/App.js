@@ -143,7 +143,7 @@ function App() {
         </button>
       )}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && !drugInfo && <p style={{ color: "red" }}>{error}</p>}
       {fdaInfo && <p style={{ color: "blue" }}>{fdaInfo}</p>}
       {drugInfo && <p style={{ color: "green" }}>{drugInfo}</p>}
     </div>
