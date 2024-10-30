@@ -14,13 +14,15 @@ function App() {
     const strippedNdc = ndcCode.replace(/-/g, "");
     const numStr = strippedNdc.toString();
 
-    // Check if the number has exactly 12 digits
-    if (numStr.length !== 12) {
-      console.log("Input number must have exactly 12 digits");
-    }
+    let trimmedNumStr = "";
 
-    // Remove the first and last character
-    const trimmedNumStr = numStr.slice(2, -1);
+    if (numStr.length === 13) {
+      // Remove first 2 characters and last character
+      trimmedNumStr = numStr.slice(2, -1);
+    } else if (numStr.length === 12) {
+      // Remove first and last character
+      trimmedNumStr = numStr.slice(1, -1);
+    }
     let formattedNdc = "";
 
     if (trimmedNumStr.length === 10) {
@@ -40,12 +42,13 @@ function App() {
     }
 
     setDrugInfo(formattedNdc);
+    console.log(formattedNdc)
 
     return formattedNdc;
   };
 
   const handleScanner = () => {
-    console.log(scannerRef.current)
+    console.log(scannerRef.current);
     if (!scannerRef.current) {
       const html5QrcodeScanner = new Html5Qrcode("reader");
 
@@ -91,12 +94,11 @@ function App() {
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
-        setDrugInfo( JSON.stringify(data.results[0]));
+        setDrugInfo(JSON.stringify(data.results[0]));
         if (scannerRef.current) {
-              scannerRef.current.stop()
-              scannerRef.current = null;
-
-            }
+          scannerRef.current.stop();
+          scannerRef.current = null;
+        }
       } else {
         setFdaInfo(
           `No drug information found for this code.${formatNdcForOpenFda(
@@ -111,8 +113,8 @@ function App() {
   };
 
   useEffect(() => {
-    handleScanner();
-//formatNdcForOpenFda("372960020283")
+    //handleScanner();
+    formatNdcForOpenFda("372960020283")
     // // Cleanup on unmount
     // return () => {
     //   if (scannerRef.current) {
@@ -135,7 +137,11 @@ function App() {
           Scanned Barcode: <strong>{barcodeData}</strong>
         </p>
       )}
-{drugInfo && (<button className="border" onClick={handleScanner}>Scan Again</button>)}
+      {drugInfo && (
+        <button className="border" onClick={handleScanner}>
+          Scan Again
+        </button>
+      )}
 
       {error && <p style={{ color: "red" }}>{error}</p>}
       {fdaInfo && <p style={{ color: "blue" }}>{fdaInfo}</p>}
