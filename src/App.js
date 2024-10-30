@@ -91,7 +91,9 @@ function App() {
       if (data.results && data.results.length > 0) {
         setDrugInfo(data.results[0]);
       } else {
-        setFdaInfo("No drug information found for this code.");
+        setFdaInfo(`No drug information found for this code.${formatNdcForOpenFda(
+          ndcCode
+        )}`);
       }
     } catch (error) {
       setFdaInfo("Error fetching drug information.");
@@ -110,6 +112,7 @@ function App() {
       }
     };
   }, []);
+  
 
   return (
     <div style={{ textAlign: "center", padding: "20px" }}>
