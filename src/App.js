@@ -77,10 +77,13 @@ function App() {
   };
   const fetchDrugInfo = async (ndcCode) => {
     try {
+      // const response = await fetch(
+      //   `https://api.fda.gov/drug/ndc.json?search=product_ndc:"${formatNdcForOpenFda(
+      //     ndcCode
+      //   )}"`
+      // );
       const response = await fetch(
-        `https://api.fda.gov/drug/ndc.json?search=product_ndc:"${formatNdcForOpenFda(
-          ndcCode
-        )}"`
+        `https://api.fda.gov/drug/ndc.json?search=product_ndc:0023-1145-01"`
       );
       const data = await response.json();
 
