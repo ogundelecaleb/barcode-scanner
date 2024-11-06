@@ -146,6 +146,7 @@ const DataMatrixScanner = () => {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )} */}
+            <p>{drugDetails}</p>
             <p>{error}</p>
 
             {/* Drug Details */}
