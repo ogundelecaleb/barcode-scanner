@@ -13,15 +13,14 @@ import DataMatrixScanner from "./DataMetrics";
 function App() {
   return (
     <div className="">
-              <Router>
-          <Routes>
-            <Route path="/" element={<Barcode />} />
-            <Route path="/data-metrics" element={<DataMatrixScanner />} />
-            </Routes>
-            </Router>
-
-</div>
-
-)}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Barcode />} />
+          <Route path="/data-metrics" element={<DataMatrixScanner />} />
+        </Routes>
+      </Router>
+    </div>
+  );
+}
 
 export default App;
