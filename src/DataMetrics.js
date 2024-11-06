@@ -53,7 +53,7 @@ const DataMatrixScanner = () => {
       setLoading(true);
       setError(null);
 
-      
+      setData(result?.text)
       try {
         const ndc = convertToNDC(result.text);
         const details = await fetchDrugDetails(ndc);
@@ -148,7 +148,7 @@ const DataMatrixScanner = () => {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )} */}
-            <p>{drugDetails}</p>
+            <p>{data}</p>
             <p>{error}</p>
 
             {/* Drug Details */}
