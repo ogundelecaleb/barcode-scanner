@@ -11,6 +11,7 @@ const DataMatrixScanner = () => {
   const [drugDetails, setDrugDetails] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [data, setData]= useState("")
 
   // Convert Data Matrix GS1 format to NDC
   const convertToNDC = (dataMatrix) => {
@@ -51,6 +52,7 @@ const DataMatrixScanner = () => {
     if (result) {
       setLoading(true);
       setError(null);
+
       
       try {
         const ndc = convertToNDC(result.text);
