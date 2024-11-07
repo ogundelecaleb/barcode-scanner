@@ -34,7 +34,7 @@ const DataMatrixScanner = () => {
   const fetchDrugDetails = async (ndc) => {
     try {
       const response = await fetch(
-         `https://api.fda.gov/drug/ndc.json?search=openfda.package_ndc:${ndc}"&limit=1`
+         `https://api.fda.gov/drug/ndc.json?search=openfda.package_ndc:${ndc}`
       );
       
       if (!response.ok) {
