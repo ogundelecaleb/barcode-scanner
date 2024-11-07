@@ -12,6 +12,7 @@ const DataMatrixScanner = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [data, setData]= useState("")
+  const [ndc, setNdc] = useState("")
 
   // Convert Data Matrix GS1 format to NDC
   const convertToNDC = (dataMatrix) => {
@@ -21,7 +22,7 @@ const DataMatrixScanner = () => {
       
       // Convert GTIN to NDC by removing the first 3 digits
       const ndc = gtin.substring(3);
-      
+      setNdc(ndc)
       // Format as 5-4-2 NDC
       return `${ndc.substring(0, 5)}-${ndc.substring(5, 9)}-${ndc.substring(9, 11)}`;
     } catch (err) {
@@ -149,6 +150,7 @@ const DataMatrixScanner = () => {
               </Alert>
             )} */}
             <p>{data}</p>
+            <p>{`NDC nUMBER: ${ndc}`}</p>
             <p>{error}</p>
 
             {/* Drug Details */}
