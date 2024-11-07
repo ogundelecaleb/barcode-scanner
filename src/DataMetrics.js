@@ -85,7 +85,26 @@ const DataMatrixScanner = () => {
   );
   function extractCharacters(text) {
     if (text.length >= 16) {
-      return text.slice(6, 16); // Extract characters from index 6 to 15 (7th to 16th characters)
+      const trimmedNumStr =  text.slice(6, 16);
+      let formattedNdc = "";
+  
+      if (trimmedNumStr.length === 10) {
+        // 10-digit format to 11-digit (5-4-2)
+        formattedNdc = `${trimmedNumStr.slice(0, 4)}-${trimmedNumStr.slice(
+          4,
+          8
+        )}-${trimmedNumStr.slice(8)}`;
+      } else if (trimmedNumStr.length === 11) {
+        // Already in the correct 11-digit format
+        formattedNdc = `${trimmedNumStr.slice(0, 5)}-${trimmedNumStr.slice(
+          5,
+          9
+        )}-${trimmedNumStr.slice(9)}`;
+      } else {
+        throw new Error("Invalid NDC code length.");
+      }
+      return formattedNdc
+      // Extract characters from index 6 to 15 (7th to 16th characters)
     } else {
       return "Text is too short to extract the desired range.";
     }
