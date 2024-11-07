@@ -178,6 +178,7 @@ const DataMatrixScanner = () => {
               </Alert>
             )} */}
             <p>{ ndc}</p>
+            <p>{`Scanned nUMBER: ${data}`}</p>
             <p>{`NDC nUMBER: ${extractCharacters(data)}`}</p>
             <p>{error}</p>
 
