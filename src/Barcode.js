@@ -85,7 +85,7 @@ const Barcode = () => {
     const fetchDrugInfo = async (ndcCode) => {
       try {
         const response = await fetch(
-          `https://api.fda.gov/drug/ndc.json?search=openfda.package_ndc:${formatNdcForOpenFda(
+            `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${formatNdcForOpenFda(
             ndcCode
           )}`
         );
