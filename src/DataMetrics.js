@@ -83,6 +83,14 @@ const DataMatrixScanner = () => {
       <span className="text-gray-900">{value || 'N/A'}</span>
     </div>
   );
+  function extractCharacters(text) {
+    if (text.length >= 16) {
+      return text.slice(6, 16); // Extract characters from index 6 to 15 (7th to 16th characters)
+    } else {
+      return "Text is too short to extract the desired range.";
+    }
+  }
+  
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
@@ -149,8 +157,8 @@ const DataMatrixScanner = () => {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )} */}
-            <p>{data}</p>
-            <p>{`NDC nUMBER: ${ndc}`}</p>
+            <p>{ ndc}</p>
+            <p>{`NDC nUMBER: ${extractCharacters(data)}`}</p>
             <p>{error}</p>
 
             {/* Drug Details */}
