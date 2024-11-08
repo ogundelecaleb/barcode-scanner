@@ -113,26 +113,37 @@ const DataMatrixScanner = () => {
   
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4">
-      {/* <Card>
-        <CardHeader> */}
-                      <Link to="/" className="px-2 py-1 rounded-lg border absolute top-2 right-1"> Scan barcode</Link>
+    <div className=" p-4 md:p-7 relative min-h-screen bg-[#fefefe]">
+      <img src="./logo.png" alt="logo" className="h-[40px] md:h-[60px]" />
+      <Link
+        to="/"
+        className="px-2 py-1 rounded-lg border absolute top-2 right-1"
+      >
+        {" "}
+        Scan Data Matrix
+      </Link>
 
-          <div className="flex justify-between items-center">
-            Drug Scanner
+      <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
+        Data Matrix Scanner
+      </h1>
+      <p className="text-center text-md text-gray-500 mt-1 ">
+        {" "}
+        Point your camera at a data matrix to scan{" "}
+      </p>
+
+          <div className="flex flex-col justify-between items-center">
+            
             {scanning && (
               <button 
-                variant="ghost" 
-                size="sm" 
+               
                 onClick={resetScanner}
-                className="text-red-500"
+                className="text-red-500 border border-gray-400 px-2 py-[6px] bg-gray-50 hover:bg-gray-100 flex items-center rounded-lg gap-2 mb-3 text-sm"
               >
-                <XCircle className="w-5 h-5" />
+                <XCircle className="w-4 h-4" />
+                Stop Scanning
               </button>
             )}
-          {/* </CardTitle>
-        </CardHeader>
-        <CardContent> */}
+         
           <div className="space-y-4">
             {/* Scanner Controls */}
             {!scanning && !drugDetails && (
