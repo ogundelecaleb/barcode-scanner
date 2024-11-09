@@ -8,7 +8,6 @@ const Barcode = () => {
   const scannerRef = useRef(null);
   const [drugInfo, setDrugInfo] = useState("");
   const [fdaInfo, setFdaInfo] = useState("");
-  const [isBarcode, setIsBarcode] = useState(true);
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -47,32 +46,6 @@ const Barcode = () => {
 
     return formattedNdc;
   };
-  function extractCharacters(text) {
-    if (text.length >= 16) {
-      const trimmedNumStr = text.slice(6, 16);
-      let formattedNdc = "";
-
-      if (trimmedNumStr.length === 10) {
-        // 10-digit format to 11-digit (5-4-2)
-        formattedNdc = `${trimmedNumStr.slice(0, 4)}-${trimmedNumStr.slice(
-          4,
-          8
-        )}-${trimmedNumStr.slice(8)}`;
-      } else if (trimmedNumStr.length === 11) {
-        // Already in the correct 11-digit format
-        formattedNdc = `${trimmedNumStr.slice(0, 5)}-${trimmedNumStr.slice(
-          5,
-          9
-        )}-${trimmedNumStr.slice(9)}`;
-      } else {
-        throw new Error("Invalid NDC code length.");
-      }
-      return formattedNdc;
-      // Extract characters from index 6 to 15 (7th to 16th characters)
-    } else {
-      return "Text is too short to extract the desired range.";
-    }
-  }
 
   const handleScanner = () => {
     console.log(scannerRef.current);
@@ -115,7 +88,9 @@ const Barcode = () => {
           ndcCode
         )}`
       );
-
+      // const response = await fetch(
+      //   `https://api.fda.gov/drug/ndc.json?search=product_ndc:0023-1145-01"`
+      // );
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
@@ -127,35 +102,6 @@ const Barcode = () => {
       } else {
         setFdaInfo(
           `No drug information found for this code.${formatNdcForOpenFda(
-            ndcCode
-          )}`
-        );
-      }
-    } catch (error) {
-      setFdaInfo("Error fetching drug information.");
-      // console.error(error);
-    }
-  };
-
-  const fetchDataMatrixDrugInfo = async (ndcCode) => {
-    try {
-      const response = await fetch(
-        `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${extractCharacters(
-          ndcCode
-        )}`
-      );
-
-      const data = await response.json();
-
-      if (data.results && data.results.length > 0) {
-        setDrugInfo(JSON.stringify(data.results[0]));
-        if (scannerRef.current) {
-          scannerRef.current.stop();
-          scannerRef.current = null;
-        }
-      } else {
-        setFdaInfo(
-          `No drug information found for this code.${extractCharacters(
             ndcCode
           )}`
         );
@@ -182,22 +128,13 @@ const Barcode = () => {
   return (
     <div className=" p-4 md:p-7 relative min-h-screen bg-[#fefefe]">
       <img src="./logo.png" alt="logo" className="h-[40px] md:h-[60px]" />
-      {/* <Link
+      <Link
         to="/data-metrics"
         className="px-2 py-1 rounded-lg border absolute top-2 right-1"
       >
         {" "}
         Scan DataMatrix
-      </Link> */}
-
-      <button
-        // to="/data-metrics"
-        onClick={() => setIsBarcode(!isBarcode)}
-        className="px-2 py-1 rounded-lg border absolute top-2 right-1"
-      >
-        {" "}
-        {isBarcode ? "Scan DataMatrix" : "Scan Barcode"}
-      </button>
+      </Link>
 
       <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
         Barcode Scanner
