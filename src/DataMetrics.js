@@ -157,10 +157,10 @@ const DataMatrixScanner = () => {
                 </button>
               </div>
             )}
-
+{/* className="relative aspect-video bg-gray-100 rounded overflow-hidden" */}
             {/* Scanner */}
             {scanning && (
-              <div className="relative aspect-video bg-gray-100 rounded overflow-hidden">
+              <div >
                 <BarcodeScannerComponent
                   width="100%"
                   height="100%"
@@ -181,13 +181,7 @@ const DataMatrixScanner = () => {
               </div>
             )}
 
-            {/* Error Message */}
-            {/* {error && (
-              <Alert variant="destructive">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )} */}
+           
             <p>{ ndc}</p>
             <p>{`Scanned nUMBER: ${data}`}</p>
             <p>{`NDC nUMBER: ${extractCharacters(data)}`}</p>
