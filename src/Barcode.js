@@ -6,7 +6,7 @@ const Barcode = () => {
   const [barcodeData, setBarcodeData] = useState("");
   const [error, setError] = useState(null);
   const scannerRef = useRef(null);
-  const [drugInfo, setDrugInfo] = useState("");
+  const [drugInfo, setDrugInfo] = useState(null);
   const [fdaInfo, setFdaInfo] = useState("");
   const [isBarcode, setIsBarcode] = useState(true);
 
@@ -74,7 +74,7 @@ const Barcode = () => {
     }
   }
 
-  const handleScanner = () => {
+  const handleScanner = async () => {
     console.log(scannerRef.current);
     if (!scannerRef.current) {
       const html5QrcodeScanner = new Html5Qrcode("reader");
@@ -89,8 +89,10 @@ const Barcode = () => {
           },
           (decodedText) => {
             setBarcodeData(decodedText);
+            console.log("fetching data atrix", decodedText);
+
             setError(null); // Clear any previous errors
-            fetchDrugInfo(decodedText);
+
             //html5QrcodeScanner.stop(); // Stop scanning after successful scan
           },
           (err) => {
@@ -108,6 +110,7 @@ const Barcode = () => {
       scannerRef.current = html5QrcodeScanner; // Store the scanner instance
     }
   };
+
   const fetchDrugInfo = async (ndcCode) => {
     try {
       const response = await fetch(
@@ -138,6 +141,7 @@ const Barcode = () => {
   };
 
   const fetchDataMatrixDrugInfo = async (ndcCode) => {
+    console.log("fetchhiinggggg======>>>>>");
     try {
       const response = await fetch(
         `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${extractCharacters(
@@ -148,7 +152,7 @@ const Barcode = () => {
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
-        setDrugInfo(JSON.stringify(data.results[0]));
+        setDrugInfo(data.results[0]);
         if (scannerRef.current) {
           scannerRef.current.stop();
           scannerRef.current = null;
@@ -168,16 +172,18 @@ const Barcode = () => {
 
   useEffect(() => {
     handleScanner();
-    //formatNdcForOpenFda("372960020283")
-    // // Cleanup on unmount
-    // return () => {
-    //   if (scannerRef.current) {
-    //     scannerRef.current
-    //       .stop()
-    //       .catch((err) => console.error("Failed to stop scanner", err));
-    //   }
-    // };
   }, []);
+
+  useEffect(() => {
+    console.log("fetching data atrix", barcodeData);
+
+    if (isBarcode) {
+      fetchDrugInfo(barcodeData);
+    } else {
+      console.log("fetching data atrix", barcodeData);
+      fetchDataMatrixDrugInfo(barcodeData);
+    }
+  }, [barcodeData]);
 
   return (
     <div className=" p-4 md:p-7 relative min-h-screen bg-[#fefefe]">
@@ -204,7 +210,7 @@ const Barcode = () => {
       </h1>
       <p className="text-center text-md text-gray-500 mt-1 ">
         {" "}
-        Point your camera at a barcode to scan{" "}
+        Point your camera at a barcode to scan ooh{" "}
       </p>
 
       <div
@@ -214,9 +220,12 @@ const Barcode = () => {
       ></div>
 
       {barcodeData && (
-        <p>
-          Scanned Barcode: <strong>{barcodeData}</strong>
-        </p>
+        <>
+          <p>
+            Scanned Barcode: <strong>{barcodeData}</strong>
+          </p>
+          <p>{`NDC nUMBER: ${extractCharacters(barcodeData)}`}</p>
+        </>
       )}
       {drugInfo && (
         <button className="border" onClick={handleScanner}>
@@ -229,8 +238,17 @@ const Barcode = () => {
           {error}
         </p>
       )}
-      {fdaInfo && <p style={{ color: "blue" }}>{fdaInfo}</p>}
-      {drugInfo && <p style={{ color: "green" }}>{drugInfo}</p>}
+      {fdaInfo && (
+        <p style={{ color: "blue" }}>
+          {fdaInfo?.results?.openfda?.brand_name}
+        </p>
+      )}
+      {drugInfo && (<>
+        <p style={{ color: "green" }}>Brand Name: {drugInfo?.openfda?.brand_name[0]}</p>
+        <p style={{ color: "green" }}>Product NDC: {drugInfo?.openfda?.product_ndc[0]}</p>
+        <p style={{ color: "green" }}>Manufacturer Name: {drugInfo?.openfda?.manufacturer_name[0]}</p>
+
+        </> )}
     </div>
   );
 };

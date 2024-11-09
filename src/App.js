@@ -16,7 +16,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Barcode />} />
-          <Route path="/data-metrics" element={<DataMatrixScanner />} />
+          <Route path="/data-metrix" element={<DataMatrixScanner />} />
         </Routes>
       </Router>
     </div>
