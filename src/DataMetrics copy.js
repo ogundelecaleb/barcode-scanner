@@ -160,3 +160,69 @@
 // };
 
 // export default DataMatrixScanner;
+
+
+// const DrugScanner = ({ gtinData }) => {
+//     const [drugInfo, setDrugInfo] = useState(null);
+//     const [error, setError] = useState(null);
+  
+//     // Function to parse GTIN and extract NDC, serial, lot, expiry date
+//     const parseDataMatrix = (data) => {
+//       const regex = /01(\d{14})10([A-Za-z0-9]+)17(\d{6})21([A-Za-z0-9]+)/;
+//       const match = data.match(regex);
+  
+//       if (match) {
+//         const gtin = match[1];
+//         const lot = match[2];
+//         const expiry = match[3];
+//         const serial = match[4];
+  
+//         // Extract last 10 digits for the NDC part from GTIN
+//         const ndc = gtin.slice(-10); // NDC part of GTIN
+  
+//         return { gtin, lot, expiry, serial, ndc };
+//       }
+  
+//       throw new Error("Data matrix format does not match expected structure.");
+//     };
+  
+//     // Convert GTIN-based NDC to a 10-digit format (5-4-1 or other applicable patterns)
+//     const formatNdc = (ndc) => {
+//       return `${ndc.slice(0, 5)}-${ndc.slice(5, 9)}-${ndc.slice(9)}`;
+//     };
+  
+//     // Fetch drug info from OpenFDA API
+//     const fetchDrugDetails = async (ndc) => {
+//       try {
+//         const response = await axios.get(
+//           `https://api.fda.gov/drug/ndc.json?search=product_ndc:${ndc}`
+//         );
+//         setDrugInfo(response.data.results[0]);
+//         setError(null);
+//       } catch (err) {
+//         setError('Drug information not found.');
+//         setDrugInfo(null);
+//       }
+//     };
+  
+//     // Handle the data matrix scan and retrieval process
+//     const handleDataMatrixScan = () => {
+//       try {
+//         const { gtin, lot, expiry, serial, ndc } = parseDataMatrix(gtinData);
+  
+//         // Format the NDC for OpenFDA query
+//         const formattedNdc = formatNdc(ndc).replace(/-/g, '');
+  
+//         // Fetch drug information from OpenFDA
+//         fetchDrugDetails(formattedNdc);
+  
+//         // Displaying GTIN, Serial, Lot, Expiry
+//         console.log(`GTIN: ${gtin}`);
+//         console.log(`Serial: ${serial}`);
+//         console.log(`Lot: ${lot}`);
+//         console.log(`Expiry: ${expiry}`);
+//         console.log(`NDC (formatted): ${formattedNdc}`);
+//       } catch (err) {
+//         setError("Failed to parse data matrix code.");
+//       }
+//     };

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
 import { Link } from "react-router-dom";
+import { Camera } from "lucide-react";
 
 const Barcode = () => {
   const [barcodeData, setBarcodeData] = useState("");
@@ -9,6 +10,7 @@ const Barcode = () => {
   const [drugInfo, setDrugInfo] = useState(null);
   const [fdaInfo, setFdaInfo] = useState("");
   const [isBarcode, setIsBarcode] = useState(true);
+  const [ndc, setNdc] = useState("");
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -39,11 +41,9 @@ const Barcode = () => {
         9
       )}-${strippedNdc.slice(9)}`;
     } else {
-      throw new Error("Invalid NDC code length.");
     }
 
-    setDrugInfo(formattedNdc);
-    console.log(formattedNdc);
+    console.log("///////", formattedNdc);
 
     return formattedNdc;
   };
@@ -65,7 +65,7 @@ const Barcode = () => {
           9
         )}-${trimmedNumStr.slice(9)}`;
       } else {
-        throw new Error("Invalid NDC code length.");
+        console.log("Invalid NDC code length.");
       }
       return formattedNdc;
       // Extract characters from index 6 to 15 (7th to 16th characters)
@@ -75,44 +75,34 @@ const Barcode = () => {
   }
 
   const handleScanner = async () => {
-    console.log(scannerRef.current);
     if (!scannerRef.current) {
-      const html5QrcodeScanner = new Html5Qrcode("reader");
+      let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+        fps: 10,
+        qrbox: 250,
+      });
+      html5QrcodeScanner.render(onScanSuccess);
 
       // Start the scanner
-      html5QrcodeScanner
-        .start(
-          { facingMode: "environment" }, // Rear camera
-          {
-            fps: 10, // Frames per second
-            qrbox: { width: 250, height: 250 }, // Scan box size
-          },
-          (decodedText) => {
-            setBarcodeData(decodedText);
-            console.log("fetching data atrix", decodedText);
 
-            setError(null); // Clear any previous errors
+      function onScanSuccess(decodedText, decodedResult) {
+        console.log(`Code scanned = ${decodedText}`, decodedResult);
 
-            //html5QrcodeScanner.stop(); // Stop scanning after successful scan
-          },
-          (err) => {
-            setError(
-              "Scanning error or barcode not detected. Please try again."
-            );
-            console.log(err);
-          }
-        )
-        .catch((err) => {
-          setError("Failed to initialize scanner.");
-          // console.error(err);
-        });
+        setBarcodeData(decodedText);
+        fetchBarcodeDrugInfo(decodedResult?.decodedText);
 
+        // if (isBarcode) {
+        //   fetchBarcodeDrugInfo(decodedResult?.decodedText);
+        // } else {
+        //   handleScan(decodedResult?.decodedText);
+        // }
+      }
       scannerRef.current = html5QrcodeScanner; // Store the scanner instance
     }
   };
 
-  const fetchDrugInfo = async (ndcCode) => {
+  const fetchBarcodeDrugInfo = async (ndcCode) => {
     try {
+      console.log("llll==>>>", ndcCode);
       const response = await fetch(
         `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${formatNdcForOpenFda(
           ndcCode
@@ -122,7 +112,7 @@ const Barcode = () => {
       const data = await response.json();
 
       if (data.results && data.results.length > 0) {
-        setDrugInfo(JSON.stringify(data.results[0]));
+        setDrugInfo(data.results[0]);
         if (scannerRef.current) {
           scannerRef.current.stop();
           scannerRef.current = null;
@@ -140,115 +130,126 @@ const Barcode = () => {
     }
   };
 
-  const fetchDataMatrixDrugInfo = async (ndcCode) => {
-    console.log("fetchhiinggggg======>>>>>");
-    try {
-      const response = await fetch(
-        `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${extractCharacters(
-          ndcCode
-        )}`
-      );
+  // const fetchDataMatrixDrugInfo = async (ndcCode) => {
+  //   console.log("fetchhiinggggg======>>>>>");
+  //   try {
+  //     const response = await fetch(
+  //       `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${extractCharacters(
+  //         ndcCode
+  //       )}`
+  //     );
 
-      const data = await response.json();
+  //     const data = await response.json();
 
-      if (data.results && data.results.length > 0) {
-        setDrugInfo(data.results[0]);
-        if (scannerRef.current) {
-          scannerRef.current.stop();
-          scannerRef.current = null;
-        }
-      } else {
-        setFdaInfo(
-          `No drug information found for this code.${extractCharacters(
-            ndcCode
-          )}`
-        );
-      }
-    } catch (error) {
-      setFdaInfo("Error fetching drug information.");
-      // console.error(error);
-    }
-  };
+  //     if (data.results && data.results.length > 0) {
+  //       setDrugInfo(data.results[0]);
+  //       if (scannerRef.current) {
+  //         scannerRef.current.stop();
+  //         scannerRef.current = null;
+  //       }
+  //     } else {
+  //       setFdaInfo(
+  //         `No drug information found for this code.${extractCharacters(
+  //           ndcCode
+  //         )}`
+  //       );
+  //     }
+  //   } catch (error) {
+  //     setFdaInfo("Error fetching drug information.");
+  //     // console.error(error);
+  //   }
+  // };
 
   useEffect(() => {
     handleScanner();
   }, []);
 
-  useEffect(() => {
-    console.log("fetching data atrix", barcodeData);
-
-    if (isBarcode) {
-      fetchDrugInfo(barcodeData);
-    } else {
-      console.log("fetching data atrix", barcodeData);
-      fetchDataMatrixDrugInfo(barcodeData);
-    }
-  }, [barcodeData]);
-
   return (
-    <div className=" p-4 md:p-7 relative min-h-screen bg-[#fefefe]">
+    <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-4">
       <img src="./logo.png" alt="logo" className="h-[40px] md:h-[60px]" />
+
       {/* <Link
-        to="/data-metrics"
-        className="px-2 py-1 rounded-lg border absolute top-2 right-1"
-      >
-        {" "}
-        Scan DataMatrix
-      </Link> */}
-
-      <button
-        // to="/data-metrics"
+        to="/matrix2"
         onClick={() => setIsBarcode(!isBarcode)}
-        className="px-2 py-1 rounded-lg border absolute top-2 right-1"
+        className="px-2 py-1 rounded-lg border text-[13px] absolute top-5 right-[160px] hover:bg-[#f4f3f3]"
       >
-        {" "}
-        {isBarcode ? "Scan DataMatrix" : "Scan Barcode"}
-      </button>
+        Scan DataMatrix2{" "}
+      </Link> */}
+      <div>
+        <div className="space-y-4">
+          <Link
+            to="/data-metrix"
+            onClick={() => setIsBarcode(!isBarcode)}
+            className="px-2 py-1 rounded-lg border text-[13px] absolute top-5 right-2 hover:bg-[#f4f3f3]"
+          >
+            Scan DataMatrix{" "}
+            {/* {isBarcode ? "Scan DataMatrix" : "Scan Barcode"} */}
+          </Link>
 
-      <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
-        Barcode Scanner
-      </h1>
-      <p className="text-center text-md text-gray-500 mt-1 ">
-        {" "}
-        Point your camera at a barcode to scan ooh{" "}
-      </p>
-
-      <div
-        id="reader"
-        style={{ width: "300px", margin: "auto" }}
-        className="p-2 border rounded-lg border-gray-300"
-      ></div>
-
-      {barcodeData && (
-        <>
-          <p>
-            Scanned Barcode: <strong>{barcodeData}</strong>
+          <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
+            {isBarcode ? "Barcode Scanner" : "Data Matrix Scanner"}
+          </h1>
+          <p className="text-center text-md text-gray-500 mt-1 ">
+            {" "}
+            Point your camera at a Data Matrix to scan
           </p>
-          <p>{`NDC nUMBER: ${extractCharacters(barcodeData)}`}</p>
-        </>
-      )}
-      {drugInfo && (
-        <button className="border" onClick={handleScanner}>
-          Scan Again
-        </button>
-      )}
 
-      {error && !drugInfo && (
-        <p className="text-center " style={{ color: "red" }}>
-          {error}
-        </p>
-      )}
-      {fdaInfo && (
-        <p style={{ color: "blue" }}>
-          {fdaInfo?.results?.openfda?.brand_name}
-        </p>
-      )}
-      {drugInfo && (<>
-        <p style={{ color: "green" }}>Brand Name: {drugInfo?.openfda?.brand_name[0]}</p>
-        <p style={{ color: "green" }}>Product NDC: {drugInfo?.openfda?.product_ndc[0]}</p>
-        <p style={{ color: "green" }}>Manufacturer Name: {drugInfo?.openfda?.manufacturer_name[0]}</p>
+          <div
+            id="reader"
+            style={{ width: "340px", margin: "auto" }}
+            className="p-2 border rounded-lg border-gray-300"
+          ></div>
 
-        </> )}
+          {barcodeData && (
+            <>
+              <p>
+                Scanned Barcode: <strong>{barcodeData}</strong>
+              </p>
+              <p>{`NDC nUMBER: ${formatNdcForOpenFda(barcodeData)}`}</p>
+            </>
+          )}
+          {drugInfo && (
+            <button className="border" onClick={handleScanner}>
+              Scan Again
+            </button>
+          )}
+
+          {error && (
+            <p className="text-red-500 text-[14px] leading-3 text-center">
+              {error}
+            </p>
+          )}
+
+          {drugInfo && (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Drug Information:</h3>
+              <div className="grid grid-cols-2 gap-1 text-[14px] leading-[14px]">
+                <div>Brand Name:</div>
+                <div>{drugInfo?.openfda?.brand_name[0]}</div>
+                <div>Generic Name:</div>
+                <div>{drugInfo?.openfda?.generic_name[0]}</div>
+                {/* <div>Manufacturer:</div>
+              <div>{drugInfo?.openfda?.labeler_name[0]}</div> */}
+                {/* <div>Dosage Form:</div>
+              <div>{drugInfo?.openfda?.dosage_form[0]}</div> */}
+                <div>Route:</div>
+                <div>{drugInfo?.openfda?.route[0]}</div>
+                <div>Product Type:</div>
+                <div>{drugInfo?.openfda?.product_type[0]}</div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="w-full flex justify-center mt-10">
+          {" "}
+          {drugInfo && (
+            <button className="px-2 py-1 rounded-lg border text-[13px]   mx-auto hover:bg-[#f4f3f3]">
+              Save Drug Information
+              {/* {isBarcode ? "Scan DataMatrix" : "Scan Barcode"} */}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

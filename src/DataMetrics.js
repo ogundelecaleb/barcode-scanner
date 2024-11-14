@@ -1,226 +1,419 @@
-import React, { useState } from 'react';
-import BarcodeScannerComponent from "react-qr-barcode-scanner";
-import { Camera, Loader2, XCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
-// import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// import { Button } from '@/components/ui/button';
+import React, { useEffect, useRef, useState } from "react";
+import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
+import { Link } from "react-router-dom";
+import { Camera } from "lucide-react";
 
-const DataMatrixScanner = () => {
-  const [scanning, setScanning] = useState(false);
-  const [drugDetails, setDrugDetails] = useState(null);
+const DataMatrix = () => {
+  const [barcodeData, setBarcodeData] = useState("");
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [data, setData]= useState("")
-  const [ndc, setNdc] = useState("")
+  const scannerRef = useRef(null);
+  const [drugInfo, setDrugInfo] = useState(null);
+  const [fdaInfo, setFdaInfo] = useState("");
+  const [isBarcode, setIsBarcode] = useState(true);
+  const [ndc, setNdc] = useState("");
 
-  // Convert Data Matrix GS1 format to NDC
-  const convertToNDC = (dataMatrix) => {
-    try {
-      // Extract the GTIN from GS1 Data Matrix
-      const gtin = dataMatrix.substring(4, 18);
-      
-      // Convert GTIN to NDC by removing the first 3 digits
-      const ndc = gtin.substring(3);
-      setNdc(ndc)
-      // Format as 5-4-2 NDC
-      return `${ndc.substring(0, 5)}-${ndc.substring(5, 9)}-${ndc.substring(9, 11)}`;
-    } catch (err) {
-      throw new Error('Invalid Data Matrix format');
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+
+  const [rawData, setRawData] = useState("");
+
+  useEffect(() => {
+    handleScanner();
+  }, []);
+
+  const handleScanner = async () => {
+    if (!scannerRef.current) {
+      let html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+        fps: 10,
+        qrbox: 250,
+      });
+      html5QrcodeScanner.render(onScanSuccess);
+
+      // Start the scanner
+
+      function onScanSuccess(decodedText, decodedResult) {
+        console.log(`Code scanned = ${decodedText}`, decodedResult);
+
+        setBarcodeData(decodedText);
+        handleScan(decodedResult?.decodedText);
+      }
+      scannerRef.current = html5QrcodeScanner; // Store the scanner instance
     }
   };
 
-  // Fetch drug details from FDA API
-  const fetchDrugDetails = async (ndc) => {
+  const GS1_AIS = {
+    "00": { name: "SSCC", length: 18 },
+    "01": { name: "GTIN", length: 14 },
+    "10": { name: "BATCH/LOT", lengthType: "variable", maxLength: 20 },
+    11: { name: "PROD_DATE", length: 6 },
+    17: { name: "EXP_DATE", length: 6 },
+    "21": { name: "SERIAL", lengthType: "variable", maxLength: 20 },
+    30: { name: "VAR_COUNT", lengthType: "variable", maxLength: 8 },
+    310: { name: "NET_WEIGHT_KG", length: 6 },
+    400: { name: "ORDER_NUMBER", lengthType: "variable", maxLength: 30 },
+    415: { name: "GLN_PAY_TO", length: 13 },
+  };
+
+  // Function to validate check digit for GTIN
+  const validateGTINCheckDigit = (gtin) => {
+    if (gtin.length !== 14) return false;
+
+    let sum = 0;
+    const checkDigit = parseInt(gtin[13]);
+
+    for (let i = 0; i < 13; i++) {
+      const digit = parseInt(gtin[i]);
+      sum += digit * (i % 2 === 0 ? 3 : 1);
+    }
+
+    const calculatedCheck = (10 - (sum % 10)) % 10;
+    return calculatedCheck === checkDigit;
+  };
+
+  // Function to parse and validate date
+  const parseGS1Date = (dateStr) => {
+    try {
+      const year = parseInt(dateStr.substring(0, 2));
+      const month = parseInt(dateStr.substring(2, 4));
+      const day = parseInt(dateStr.substring(4, 6));
+
+      // Determine century (assume 20xx for years 00-49, 19xx for 50-99)
+      const fullYear = year + (year < 50 ? 2000 : 1900);
+
+      // Validate date
+      const date = new Date(fullYear, month - 1, day);
+      if (
+        date.getFullYear() !== fullYear ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+      ) {
+        console.log("Invalid date");
+      }
+
+      return date.toISOString().split("T")[0];
+    } catch (error) {
+      console.log(`Invalid date format: ${dateStr}`);
+    }
+  };
+
+  const parseDataMatrix = (data) => {
+    const parsedData = {
+      gtin: "",
+      serial: "",
+      lot: "",
+      expiry: "",
+      productionDate: "",
+      additionalData: {},
+      raw: data,
+    };
+
+    try {
+      // Handle different separator characters
+      const separators = ["\u001D", "\u001E", "\u001F", "\u0004"];
+      let segments = [data];
+
+      for (const separator of separators) {
+        if (data.includes(separator)) {
+          segments = data.split(separator);
+          break;
+        }
+      }
+
+      // Process each segment
+      for (let segment of segments) {
+        // Skip empty segments
+        if (!segment) continue;
+
+        // Find matching AI
+        let foundAI = null;
+        let aiLength = 2;
+
+        // Try 2-digit and 3-digit AIs
+        for (const [ai, info] of Object.entries(GS1_AIS)) {
+          if (segment.startsWith(ai)) {
+            foundAI = { ai, ...info };
+            aiLength = ai.length;
+            break;
+          }
+        }
+
+        if (!foundAI) {
+          continue;
+        }
+
+        // Extract value based on AI definition
+        const value =
+          foundAI.lengthType === "variable"
+            ? segment.substring(aiLength).split(/[\u001D\u001E\u001F\u0004]/)[0]
+            : segment.substring(aiLength, aiLength + foundAI.length);
+
+        // Validate and store the value
+        switch (foundAI.ai) {
+          case "01": // GTIN
+            if (!validateGTINCheckDigit(value)) {
+              console.log("Invalid GTIN check digit");
+            }
+            parsedData.gtin = value;
+            break;
+
+          case "21": // Serial
+            if (value.length > 20) {
+              console.log("Serial number too long");
+            }
+            parsedData.serial = value;
+            break;
+
+          case "10": // Lot/Batch
+            if (value.length > 20) {
+              console.log("Lot number too long");
+            }
+            parsedData.lot = value;
+            break;
+
+          case "17": // Expiry
+            parsedData.expiry = parseGS1Date(value);
+            break;
+
+          case "11": // Production Date
+            parsedData.productionDate = parseGS1Date(value);
+            break;
+
+          default:
+            // Store other values in additionalData
+            parsedData.additionalData[foundAI.name] = value;
+        }
+      }
+
+      // Validate required fields
+      if (!parsedData.gtin) {
+        console.log("GTIN is required but not found");
+      }
+
+      return parsedData;
+    } catch (error) {
+      console.log(`Data matrix parsing error: ${error.message}`);
+    }
+  };
+
+  // Convert GTIN to NDC with format validation
+  const gtinToNDC = (gtin) => {
+    try {
+      // Remove the first 3 digits (packaging level) and check digit
+      const ndcPart = gtin.substring(3, 13);
+
+      // Validate numeric
+      if (!/^\d{10}$/.test(ndcPart)) {
+        console.log("Invalid NDC format");
+      }
+
+      // Try different NDC formats (5-4-1, 5-3-2, 4-4-2)
+      const formats = [
+        { parts: [4, 4, 2] },
+        { parts: [5, 4, 1] },
+        { parts: [5, 3, 2] },
+      ];
+
+      for (const format of formats) {
+        let position = 0;
+        const parts = [];
+
+        for (const length of format.parts) {
+          parts.push(ndcPart.substring(position, position + length));
+          position += length;
+        }
+
+        // Return first valid format
+        const ndc = parts.join("-");
+        if (position === 10) {
+          return ndc;
+        }
+      }
+
+      console.log("Could not determine NDC format");
+    } catch (error) {
+      console.log(`NDC conversion error: ${error.message}`);
+    }
+  };
+
+  // Fetch drug info from OpenFDA with enhanced error handling
+  const fetchDrugInfo = async (ndc) => {
     try {
       const response = await fetch(
-         `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${ndc}`
+        `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${ndc}`
       );
-      
+
       if (!response.ok) {
-        throw new Error('Drug not found in FDA database');
+        const errorData = await response.json();
+        console.log(errorData.error?.message || "API request failed");
       }
-      
+
       const data = await response.json();
+
+      if (!data.results || data.results.length === 0) {
+        console.log("Drug not found in OpenFDA database");
+      }
+      // if (data.results || data.results.length > 0) {
+      //   if (scannerRef.current) {
+      //     scannerRef.current.stop();
+      //     scannerRef.current = null;
+      //   }
+      // }
+
       return data.results[0];
-    } catch (err) {
-      throw new Error(err.message || 'Failed to fetch drug details');
-    }
-  };
-
-  // Handle successful scan
-  const handleScan = async (err, result) => {
-    if (result) {
-      setLoading(true);
-      setError(null);
-
-      setData(result?.text)
-      try {
-        // const ndc = convertToNDC(result.text);
-         const ndc = extractCharacters(result.text);
-        const details = await fetchDrugDetails(ndc);
-        setDrugDetails(details);
-        setScanning(false);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
+    } catch (error) {
+      if (error.message.includes("API request failed")) {
+        console.log("OpenFDA API error: " + error.message);
       }
-    }
-    
-    if (err) {
-      setError('Failed to scan code. Please try again.');
+      console.log("Failed to fetch drug information: " + error.message);
     }
   };
 
-  const resetScanner = () => {
-    setScanning(false);
-    setDrugDetails(null);
-    setError(null);
-  };
-  const DetailRow = ({ label, value }) => (
-    <div className="grid grid-cols-2 gap-2">
-      <span className="font-medium text-gray-600">{label}:</span>
-      <span className="text-gray-900">{value || 'N/A'}</span>
-    </div>
-  );
-  function extractCharacters(text) {
-    if (text.length >= 16) {
-      const trimmedNumStr =  text.slice(6, 16);
-      let formattedNdc = "";
-  
-      if (trimmedNumStr.length === 10) {
-        // 10-digit format to 11-digit (5-4-2)
-        formattedNdc = `${trimmedNumStr.slice(0, 4)}-${trimmedNumStr.slice(
-          4,
-          8
-        )}-${trimmedNumStr.slice(8)}`;
-      } else if (trimmedNumStr.length === 11) {
-        // Already in the correct 11-digit format
-        formattedNdc = `${trimmedNumStr.slice(0, 5)}-${trimmedNumStr.slice(
-          5,
-          9
-        )}-${trimmedNumStr.slice(9)}`;
-      } else {
-        throw new Error("Invalid NDC code length.");
-      }
-      return formattedNdc
-      // Extract characters from index 6 to 15 (7th to 16th characters)
-    } else {
-      return "Text is too short to extract the desired range.";
+  // Handle camera scan
+  const handleScan = async (ScanData) => {
+    setScanning(true);
+
+    try {
+      //ScanData = "01123456789012340921123456\u001D17240531\u001D10ABC123\u001D11240125";
+      setRawData(ScanData);
+
+      const parsedData = parseDataMatrix(ScanData);
+      setScanResult(parsedData);
+
+      const ndcc = gtinToNDC(parsedData.gtin);
+      setNdc(ndcc);
+
+      const drugData = await fetchDrugInfo(ndcc);
+      console.log("=====>>>", drugData);
+
+      setDrugInfo(drugData);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setScanning(false);
     }
-  }
-  
+  };
 
   return (
-    <div className=" p-4 md:p-7 relative min-h-screen bg-[#fefefe]">
+    <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-4">
       <img src="./logo.png" alt="logo" className="h-[40px] md:h-[60px]" />
-      <Link
-        to="/"
-        className="px-2 py-1 rounded-lg border absolute top-2 right-1"
-      >
-        {" "}
-        Scan Data Matrix
-      </Link>
 
-      <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
-        Data Matrix Scanner
-      </h1>
-      <p className="text-center text-md text-gray-500 mt-1 ">
-        {" "}
-        Point your camera at a data matrix to scan{" "}
-      </p>
+      <div>
+        <div className="space-y-4">
+          <Link
+            // to="/data-metrix"
+            to="/"
+            onClick={() => setIsBarcode(!isBarcode)}
+            className="px-2 py-1 rounded-lg border text-[13px] absolute top-5 right-2 hover:bg-[#f4f3f3]"
+          >
+            Scan Barcode{" "}
+            {/* {isBarcode ? "Scan DataMatrix" : "Scan Barcode"} */}
+          </Link>
 
-          <div className="flex flex-col justify-between items-center">
-            
-            {scanning && (
-              <button 
-               
-                onClick={resetScanner}
-                className="text-red-500 border border-gray-400 px-2 py-[6px] bg-gray-50 hover:bg-gray-100 flex items-center rounded-lg gap-2 mb-3 text-sm"
-              >
-                <XCircle className="w-4 h-4" />
-                Stop Scanning
-              </button>
-            )}
-         
-          <div className="space-y-4">
-            {/* Scanner Controls */}
-            {!scanning && !drugDetails && (
-              <div className="flex justify-center">
-                <button
-                  onClick={() => setScanning(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Camera className="w-5 h-5" />
-                  Start Scanning
-                </button>
+          <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
+            {isBarcode ? "Barcode Scanner" : "Data Matrix Scanner"}
+          </h1>
+          <p className="text-center text-md text-gray-500 mt-1 ">
+            {" "}
+            Point your camera at a Data Matrix to scan
+          </p>
+
+          <div
+            id="reader"
+            style={{ width: "340px", margin: "auto" }}
+            className="p-2 border rounded-lg border-gray-300"
+          ></div>
+
+          {barcodeData && (
+            <>
+              <p>
+                Scanned Barcode: <strong>{barcodeData}</strong>
+              </p>
+              <p>{`NDC nUMBER: ${ndc}`}</p>
+            </>
+          )}
+          {drugInfo && (
+            <button className="border" onClick={handleScanner}>
+              Scan Again
+            </button>
+          )}
+
+          {error && (
+            <p className="text-red-500 text-[14px] leading-3 text-center">
+              {error}
+            </p>
+          )}
+
+          {/* {!isBarcode && (
+            <>
+              <div className="break-all">{rawData}</div>
+              <div className="break-all">{ndc}</div>
+            </>
+          )} */}
+
+          {scanResult && (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Scan Result:</h3>
+              <div className="grid grid-cols-2 gap-1 text-[14px] leading-[14px]">
+                <div>Raw Data:</div>
+                <div className="break-all">{rawData}</div>
+                <div>GTIN:</div>
+                <div>{scanResult.gtin}</div>
+                <div>Serial:</div>
+                <div>{scanResult.serial}</div>
+                <div>Lot:</div>
+                <div>{scanResult.lot}</div>
+                <div>Expiry:</div>
+                <div>{scanResult.expiry}</div>
+                {scanResult.productionDate && (
+                  <>
+                    <div>Production Date:</div>
+                    <div>{scanResult.productionDate}</div>
+                  </>
+                )}
+                {Object.entries(scanResult.additionalData).map(
+                  ([key, value]) => (
+                    <>
+                      <div>{key}:</div>
+                      <div>{value}</div>
+                    </>
+                  )
+                )}
               </div>
-            )}
-{/* className="relative aspect-video bg-gray-100 rounded overflow-hidden" */}
-            {/* Scanner */}
-            {scanning && (
-              <div >
-                <BarcodeScannerComponent
-                  width="100%"
-                  height="100%"
-                  onUpdate={handleScan}
-                  torch={false}
-                  stopStream={!scanning}
-                />
-                <div className="absolute inset-0 border-2 border-blue-500 opacity-50 pointer-events-none">
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-red-500"></div>
-                </div>
-              </div>
-            )}
+            </div>
+          )}
 
-            {/* Loading State */}
-            {loading && (
-              <div className="flex justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          {drugInfo && (
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Drug Information:</h3>
+              <div className="grid grid-cols-2 gap-1 text-[14px] leading-[14px]">
+                <div>Brand Name:</div>
+                <div>{drugInfo?.openfda?.brand_name[0]}</div>
+                <div>Generic Name:</div>
+                <div>{drugInfo?.openfda?.generic_name[0]}</div>
+                {/* <div>Manufacturer:</div>
+                <div>{drugInfo?.openfda?.labeler_name[0]}</div> */}
+                {/* <div>Dosage Form:</div>
+                <div>{drugInfo?.openfda?.dosage_form[0]}</div> */}
+                <div>Route:</div>
+                <div>{drugInfo?.openfda?.route[0]}</div>
+                <div>Product Type:</div>
+                <div>{drugInfo?.openfda?.product_type[0]}</div>
               </div>
-            )}
-
-           
-            <p>{ ndc}</p>
-            <p>{`Scanned nUMBER: ${data}`}</p>
-            <p>{`NDC nUMBER: ${extractCharacters(data)}`}</p>
-            <p>{error}</p>
-
-            {/* Drug Details */}
-            {drugDetails && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Drug Information</h3>
-                <div className="grid gap-3 p-4 bg-gray-50 rounded-lg">
-                  <DetailRow label="Brand Name" value={drugDetails.brand_name} />
-                  <DetailRow label="Generic Name" value={drugDetails.generic_name} />
-                  <DetailRow label="Manufacturer" value={drugDetails.labeler_name} />
-                  <DetailRow label="Product Type" value={drugDetails.product_type} />
-                  <DetailRow label="Route" value={drugDetails.route?.[0]} />
-                  <DetailRow label="Dosage Form" value={drugDetails.dosage_form} />
-                  <DetailRow 
-                    label="Strength" 
-                    value={drugDetails.active_ingredients?.[0]?.strength} 
-                  />
-                  <DetailRow label="NDC" value={drugDetails.product_ndc} />
-                </div>
-                <button 
-                  onClick={resetScanner}
-                  className="w-full"
-                >
-                  Scan Another Drug
-                </button>
-              </div>
-            )}
-          </div>
-          </div>
-        {/* </CardContent>
-      </Card> */}
+            </div>
+          )}
+        </div>
+        <div className="w-full flex justify-center mt-10">
+          {" "}
+          {drugInfo && (
+            <button className="px-2 py-1 rounded-lg border text-[13px]   mx-auto hover:bg-[#f4f3f3]">
+              Save Drug Information
+              {/* {isBarcode ? "Scan DataMatrix" : "Scan Barcode"} */}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-// Helper component for displaying drug details
-
-
-export default DataMatrixScanner;
+export default DataMatrix;

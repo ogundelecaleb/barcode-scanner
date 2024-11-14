@@ -9,6 +9,8 @@ import {
 } from "react-router-dom";
 import Barcode from "./Barcode";
 import DataMatrixScanner from "./DataMetrics";
+import DataMatrix from "./DataMetrics";
+import DataMatrix2 from "./DataMetrics copy 2";
 
 function App() {
   return (
@@ -16,7 +18,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Barcode />} />
-          <Route path="/data-metrix" element={<DataMatrixScanner />} />
+          <Route path="/data-metrix" element={<DataMatrix />} />
+          <Route path="/matrix2" element={<DataMatrix2 />} />
         </Routes>
       </Router>
     </div>
