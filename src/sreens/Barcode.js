@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
-import { Link } from "react-router-dom";
-import { Camera } from "lucide-react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Camera, LogOut } from "lucide-react";
+import api from "../api";
+import NormalInputField from "../components/NormalInputField";
+import NormalSelectInputField from "../components/NormalSelectInputField";
+import { ClipLoader } from "react-spinners";
+import { enqueueSnackbar } from "notistack";
+import Header from "../components/Header";
 
 const Barcode = () => {
   const [barcodeData, setBarcodeData] = useState("");
@@ -11,6 +17,31 @@ const Barcode = () => {
   const [fdaInfo, setFdaInfo] = useState("");
   const [isBarcode, setIsBarcode] = useState(true);
   const [ndc, setNdc] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [po, setPo] = useState("");
+  const [lot, setLot] = useState("");
+  const [expiration, setExpiration] = useState("");
+  const [manufacturer, setManufacturer] = useState("");
+  const [numOfContainers, setNumOfContainers] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
+  const [coaAdjustment, setCoaAdjustment] = useState("");
+  const [name, setName] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [gtin, setGtin] = useState("");
+  const [unit, setUnit] = useState("");
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    handleScanner();
+  }, []);
+  let userData = localStorage.getItem("auth");
+  console.log(userData);
+  if (!userData) {
+    return <Navigate to="/login" />;
+  } else {
+    console.log("Valid token");
+  }
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -43,10 +74,11 @@ const Barcode = () => {
     } else {
     }
 
-    console.log("///////", formattedNdc);
+    //console.log("///////", formattedNdc);
 
     return formattedNdc;
   };
+
   function extractCharacters(text) {
     if (text.length >= 16) {
       const trimmedNumStr = text.slice(6, 16);
@@ -113,6 +145,7 @@ const Barcode = () => {
 
       if (data.results && data.results.length > 0) {
         setDrugInfo(data.results[0]);
+        setName(data.results[0]?.openfda?.brand_name[0]);
         if (scannerRef.current) {
           scannerRef.current.stop();
           scannerRef.current = null;
@@ -130,61 +163,40 @@ const Barcode = () => {
     }
   };
 
-  // const fetchDataMatrixDrugInfo = async (ndcCode) => {
-  //   console.log("fetchhiinggggg======>>>>>");
-  //   try {
-  //     const response = await fetch(
-  //       `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${extractCharacters(
-  //         ndcCode
-  //       )}`
-  //     );
+  async function handleCreateDrug(e) {
+    e.preventDefault();
+    setIsLoading(true);
 
-  //     const data = await response.json();
+    try {
+      const response = await api.createMedication({
+        name,
+        gtin,
+        unit,
+        ndc: formatNdcForOpenFda(barcodeData) || ndc,
+        lot,
+        coaAdjustment,
+        expiration,
+        serialNumber,
+        numOfContainers,
+        po,
+        quantity,
+      });
 
-  //     if (data.results && data.results.length > 0) {
-  //       setDrugInfo(data.results[0]);
-  //       if (scannerRef.current) {
-  //         scannerRef.current.stop();
-  //         scannerRef.current = null;
-  //       }
-  //     } else {
-  //       setFdaInfo(
-  //         `No drug information found for this code.${extractCharacters(
-  //           ndcCode
-  //         )}`
-  //       );
-  //     }
-  //   } catch (error) {
-  //     setFdaInfo("Error fetching drug information.");
-  //     // console.error(error);
-  //   }
-  // };
-
-  useEffect(() => {
-    handleScanner();
-  }, []);
+      enqueueSnackbar(response.message, { variant: "success" });
+      setIsLoading(false);
+    } catch (e) {
+      enqueueSnackbar(e.message, { variant: "error" });
+      console.error("Error updating applicant: ", e);
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-4">
-      <img src="./logo.png" alt="logo" className="h-[40px] md:h-[60px]" />
-
-      {/* <Link
-        to="/matrix2"
-        onClick={() => setIsBarcode(!isBarcode)}
-        className="px-2 py-1 rounded-lg border text-[13px] absolute top-5 right-[160px] hover:bg-[#f4f3f3]"
-      >
-        Scan DataMatrix2{" "}
-      </Link> */}
+     <Header/>
       <div>
         <div className="space-y-4">
-          <Link
-            to="/data-metrix"
-            onClick={() => setIsBarcode(!isBarcode)}
-            className="px-2 py-1 rounded-lg border text-[13px] absolute top-5 right-2 hover:bg-[#f4f3f3]"
-          >
-            Scan DataMatrix{" "}
-            {/* {isBarcode ? "Scan DataMatrix" : "Scan Barcode"} */}
-          </Link>
+         
 
           <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
             {isBarcode ? "Barcode Scanner" : "Data Matrix Scanner"}
@@ -208,11 +220,11 @@ const Barcode = () => {
               <p>{`NDC nUMBER: ${formatNdcForOpenFda(barcodeData)}`}</p>
             </>
           )}
-          {drugInfo && (
+          {/* {drugInfo && (
             <button className="border" onClick={handleScanner}>
               Scan Again
             </button>
-          )}
+          )} */}
 
           {error && (
             <p className="text-red-500 text-[14px] leading-3 text-center">
@@ -230,8 +242,6 @@ const Barcode = () => {
                 <div>{drugInfo?.openfda?.generic_name[0]}</div>
                 {/* <div>Manufacturer:</div>
               <div>{drugInfo?.openfda?.labeler_name[0]}</div> */}
-                {/* <div>Dosage Form:</div>
-              <div>{drugInfo?.openfda?.dosage_form[0]}</div> */}
                 <div>Route:</div>
                 <div>{drugInfo?.openfda?.route[0]}</div>
                 <div>Product Type:</div>
@@ -240,16 +250,118 @@ const Barcode = () => {
             </div>
           )}
         </div>
-        <div className="w-full flex justify-center mt-10">
-          {" "}
-          {drugInfo && (
-            <button className="px-2 py-1 rounded-lg border text-[13px]   mx-auto hover:bg-[#f4f3f3]">
-              Save Drug Information
-              {/* {isBarcode ? "Scan DataMatrix" : "Scan Barcode"} */}
-            </button>
-          )}
-        </div>
       </div>
+
+      <form
+        onSubmit={handleCreateDrug}
+        className="px-5 py-3 text-[14px] space-y-4 mt-4"
+      >
+        <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+          <NormalInputField
+            title="Medication Name"
+            isRequired={true}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <NormalSelectInputField
+            title="Grade"
+            values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
+            value={gtin}
+            onChange={(e) => setGtin(e.target.value)}
+            isRequired={true}
+          />
+          <NormalInputField
+            title="NDC"
+            isRequired={true}
+            type="text"
+            value={formatNdcForOpenFda(barcodeData) || ndc}
+            onChange={(e) => setNdc(e.target.value)}
+          />
+          <NormalInputField
+            title="LOT"
+            isRequired={true}
+            type="text"
+            value={lot}
+            onChange={(e) => setLot(e.target.value)}
+          />
+          <NormalInputField
+            title="PO"
+            isRequired={true}
+            type="text"
+            value={po}
+            onChange={(e) => setPo(e.target.value)}
+          />
+          <NormalInputField
+            title="Serial Number"
+            isRequired={true}
+            type="text"
+            value={serialNumber}
+            onChange={(e) => setSerialNumber(e.target.value)}
+          />
+          <NormalInputField
+            title="Expiration Date"
+            isRequired={true}
+            type="date"
+            value={expiration}
+            onChange={(e) => setExpiration(e.target.value)}
+          />
+          <NormalInputField
+            title="Quantity"
+            isRequired={true}
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+          <NormalInputField
+            title="Number of containers"
+            isRequired={true}
+            type="number"
+            value={numOfContainers}
+            onChange={(e) => setNumOfContainers(e.target.value)}
+          />
+
+          <NormalSelectInputField
+            onChange={(e) => setUnit(e.target.value)}
+            title="Select unit"
+            isRequired={true}
+            value={unit}
+            values={["GM", "MG", "MCG", "ML"]}
+          />
+          <NormalInputField
+            title="CoA Adjustment %"
+            isRequired={true}
+            type="number"
+            value={coaAdjustment}
+            onChange={(e) => setCoaAdjustment(e.target.value)}
+          />
+
+          <NormalInputField
+            title="CoA Document"
+            isRequired={false}
+            type="file"
+            onChange={(e) => setCoaAdjustment(e.target.value)}
+          />
+        </div>
+        <div className="mt-4">
+          <div className="text-[14px] font-semibold py-1 text-red-500">
+            {error}
+          </div>
+
+          <button
+            className="bg-[#00B0AD] py-3 px-3 disabled:cursor-not-allowed disabled:bg-primary-light disabled:text-primary shadow-md font-semibold flex items-center justify-center text-white rounded-[8px] text-[14px]"
+            type={"submit"}
+            // disabled={isLoading}
+          >
+            {isLoading ? (
+              <ClipLoader color="white" size={16} />
+            ) : (
+              "Add Medication +"
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

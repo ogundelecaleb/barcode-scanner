@@ -7,19 +7,30 @@ import {
   BrowserRouter as Router,
   Navigate,
 } from "react-router-dom";
-import Barcode from "./Barcode";
-import DataMatrixScanner from "./DataMetrics";
-import DataMatrix from "./DataMetrics";
+import Barcode from "./sreens/Barcode";
+import DataMatrixScanner from "./sreens/DataMetrics";
+import DataMatrix from "./sreens/DataMetrics";
 import DataMatrix2 from "./DataMetrics copy 2";
+import LoginPage from "./login_page";
+import { SnackbarProvider } from "notistack";
+
 
 function App() {
+
   return (
     <div className="">
+       <SnackbarProvider
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      />
       <Router>
         <Routes>
           <Route path="/" element={<Barcode />} />
-          <Route path="/data-metrix" element={<DataMatrix />} />
+          <Route path="/data-matrix" element={<DataMatrix />} />
           <Route path="/matrix2" element={<DataMatrix2 />} />
+          <Route path="/login" element={<LoginPage />} />
         </Routes>
       </Router>
     </div>
