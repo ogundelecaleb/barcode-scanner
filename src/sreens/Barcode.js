@@ -29,17 +29,18 @@ const Barcode = () => {
   const [gtin, setGtin] = useState("");
   const [unit, setUnit] = useState("");
   const [price, setPrice] = useState("")
-
-
-
-  useEffect(() => {
+  const navigate = useNavigate()
 
   let userData = localStorage.getItem("auth");
-  //console.log(userData);
+
   if (!userData) {
-    <Navigate to="/login" />;
+    // <Navigate to="/login" />;
+    navigate("/login")
   } else {
     handleScanner();  }
+  useEffect(() => {
+
+  
     
   }, []);
 
