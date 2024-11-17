@@ -33,14 +33,13 @@ const Barcode = () => {
 
   let userData = localStorage.getItem("auth");
 
+
+  useEffect(() => {
+
   if (!userData) {
-    // <Navigate to="/login" />;
     navigate("/login")
   } else {
     handleScanner();  }
-  useEffect(() => {
-
-  
     
   }, []);
 
