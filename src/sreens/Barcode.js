@@ -32,16 +32,17 @@ const Barcode = () => {
 
   const navigate = useNavigate();
 
+
   useEffect(() => {
-    handleScanner();
-  }, []);
+
   let userData = localStorage.getItem("auth");
   console.log(userData);
   if (!userData) {
     return <Navigate to="/login" />;
   } else {
-    console.log("Valid token");
-  }
+    handleScanner();  }
+    
+  }, []);
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
