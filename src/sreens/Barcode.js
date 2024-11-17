@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { Camera, LogOut } from "lucide-react";
 import api from "../api";
 import NormalInputField from "../components/NormalInputField";
 import NormalSelectInputField from "../components/NormalSelectInputField";
@@ -29,6 +28,7 @@ const Barcode = () => {
   const [quantity, setQuantity] = useState("");
   const [gtin, setGtin] = useState("");
   const [unit, setUnit] = useState("");
+  const [price, setPrice] = useState("")
 
   const navigate = useNavigate();
 
@@ -181,6 +181,7 @@ const Barcode = () => {
         numOfContainers,
         po,
         quantity,
+        price
       });
 
       enqueueSnackbar(response.message, { variant: "success" });
@@ -221,11 +222,7 @@ const Barcode = () => {
               <p>{`NDC nUMBER: ${formatNdcForOpenFda(barcodeData)}`}</p>
             </>
           )}
-          {/* {drugInfo && (
-            <button className="border" onClick={handleScanner}>
-              Scan Again
-            </button>
-          )} */}
+       
 
           {error && (
             <p className="text-red-500 text-[14px] leading-3 text-center">
@@ -322,7 +319,13 @@ const Barcode = () => {
             value={numOfContainers}
             onChange={(e) => setNumOfContainers(e.target.value)}
           />
-
+ <NormalInputField
+            title="Price"
+            isRequired={true}
+            type="text"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
           <NormalSelectInputField
             onChange={(e) => setUnit(e.target.value)}
             title="Select unit"

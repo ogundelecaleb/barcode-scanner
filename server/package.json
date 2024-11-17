@@ -1,0 +1,21 @@
+{
+  "name": "server",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "A mini server for blendcarerx auth",
+  "main": "scan.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node scan.js",
+    "dev": "nodemon scan.js"
+  },
+  "author": "Denning Kahky",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "http": "^0.0.1-security",
+    "nodemon": "^3.1.7"
+  }
+}

@@ -28,6 +28,8 @@ const DataMatrix = () => {
   const [quantity, setQuantity] = useState("");
   const [gtin, setGtin] = useState("");
   const [unit, setUnit] = useState("");
+  const [price, setPrice] = useState("")
+
 
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
@@ -332,6 +334,7 @@ const DataMatrix = () => {
         numOfContainers,
         po,
         quantity,
+        price
       });
 
       enqueueSnackbar(response.message, { variant: "success" });
@@ -486,6 +489,13 @@ const DataMatrix = () => {
             type="number"
             value={numOfContainers}
             onChange={(e) => setNumOfContainers(e.target.value)}
+          />
+           <NormalInputField
+            title="Price"
+            isRequired={true}
+            type="text"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
           />
 
           <NormalSelectInputField
