@@ -30,13 +30,12 @@ const Barcode = () => {
   const [unit, setUnit] = useState("");
   const [price, setPrice] = useState("")
 
-  const navigate = useNavigate();
 
 
   useEffect(() => {
 
   let userData = localStorage.getItem("auth");
-  console.log(userData);
+  //console.log(userData);
   if (!userData) {
     <Navigate to="/login" />;
   } else {
@@ -75,7 +74,7 @@ const Barcode = () => {
     } else {
     }
 
-    //console.log("///////", formattedNdc);
+    ////console.log("///////", formattedNdc);
 
     return formattedNdc;
   };
@@ -98,7 +97,7 @@ const Barcode = () => {
           9
         )}-${trimmedNumStr.slice(9)}`;
       } else {
-        console.log("Invalid NDC code length.");
+        //console.log("Invalid NDC code length.");
       }
       return formattedNdc;
       // Extract characters from index 6 to 15 (7th to 16th characters)
@@ -118,7 +117,7 @@ const Barcode = () => {
       // Start the scanner
 
       function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Code scanned = ${decodedText}`, decodedResult);
+        //console.log(`Code scanned = ${decodedText}`, decodedResult);
 
         setBarcodeData(decodedText);
         fetchBarcodeDrugInfo(decodedResult?.decodedText);
@@ -135,7 +134,7 @@ const Barcode = () => {
 
   const fetchBarcodeDrugInfo = async (ndcCode) => {
     try {
-      console.log("llll==>>>", ndcCode);
+      //console.log("llll==>>>", ndcCode);
       const response = await fetch(
         `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${formatNdcForOpenFda(
           ndcCode
@@ -160,7 +159,7 @@ const Barcode = () => {
       }
     } catch (error) {
       setFdaInfo("Error fetching drug information.");
-      // console.error(error);
+      // //console.error(error);
     }
   };
 
@@ -188,7 +187,7 @@ const Barcode = () => {
       setIsLoading(false);
     } catch (e) {
       enqueueSnackbar(e.message, { variant: "error" });
-      console.error("Error updating applicant: ", e);
+      //console.error("Error updating applicant: ", e);
       setIsLoading(false);
     }
   }

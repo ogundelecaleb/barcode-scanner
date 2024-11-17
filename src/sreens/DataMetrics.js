@@ -51,7 +51,7 @@ const DataMatrix = () => {
       // Start the scanner
 
       function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Code scanned = ${decodedText}`, decodedResult);
+        //console.log(`Code scanned = ${decodedText}`, decodedResult);
 
         setBarcodeData(decodedText);
         handleScan(decodedResult?.decodedText);
@@ -106,12 +106,12 @@ const DataMatrix = () => {
         date.getMonth() !== month - 1 ||
         date.getDate() !== day
       ) {
-        console.log("Invalid date");
+        //console.log("Invalid date");
       }
 
       return date.toISOString().split("T")[0];
     } catch (error) {
-      console.log(`Invalid date format: ${dateStr}`);
+      //console.log(`Invalid date format: ${dateStr}`);
     }
   };
 
@@ -170,21 +170,21 @@ const DataMatrix = () => {
         switch (foundAI.ai) {
           case "01": // GTIN
             if (!validateGTINCheckDigit(value)) {
-              console.log("Invalid GTIN check digit");
+              //console.log("Invalid GTIN check digit");
             }
             parsedData.gtin = value;
             break;
 
           case 21: // Serial
             if (value.length > 20) {
-              console.log("Serial number too long");
+              //console.log("Serial number too long");
             }
             parsedData.serial = value;
             break;
 
           case "10": // Lot/Batch
             if (value.length > 20) {
-              console.log("Lot number too long");
+              //console.log("Lot number too long");
             }
             parsedData.lot = value;
             break;
@@ -205,12 +205,12 @@ const DataMatrix = () => {
 
       // Validate required fields
       if (!parsedData.gtin) {
-        console.log("GTIN is required but not found");
+        //console.log("GTIN is required but not found");
       }
 
       return parsedData;
     } catch (error) {
-      console.log(`Data matrix parsing error: ${error.message}`);
+      //console.log(`Data matrix parsing error: ${error.message}`);
     }
   };
 
@@ -222,7 +222,7 @@ const DataMatrix = () => {
 
       // Validate numeric
       if (!/^\d{10}$/.test(ndcPart)) {
-        console.log("Invalid NDC format");
+        //console.log("Invalid NDC format");
       }
 
       // Try different NDC formats (5-4-1, 5-3-2, 4-4-2)
@@ -248,9 +248,9 @@ const DataMatrix = () => {
         }
       }
 
-      console.log("Could not determine NDC format");
+      //console.log("Could not determine NDC format");
     } catch (error) {
-      console.log(`NDC conversion error: ${error.message}`);
+      //console.log(`NDC conversion error: ${error.message}`);
     }
   };
 
@@ -263,13 +263,13 @@ const DataMatrix = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.log(errorData.error?.message || "API request failed");
+        //console.log(errorData.error?.message || "API request failed");
       }
 
       const data = await response.json();
 
       if (!data.results || data.results.length === 0) {
-        console.log("Drug not found in OpenFDA database");
+        //console.log("Drug not found in OpenFDA database");
       }
       if (data.results || data.results.length > 0) {
         // if (scannerRef.current) {
@@ -282,9 +282,9 @@ const DataMatrix = () => {
       return data.results[0];
     } catch (error) {
       if (error.message.includes("API request failed")) {
-        console.log("OpenFDA API error: " + error.message);
+        //console.log("OpenFDA API error: " + error.message);
       }
-      console.log("Failed to fetch drug information: " + error.message);
+      //console.log("Failed to fetch drug information: " + error.message);
     }
   };
 
@@ -307,7 +307,7 @@ const DataMatrix = () => {
       setNdc(ndcc);
 
       const drugData = await fetchDrugInfo(ndcc);
-      console.log("=====>>>", drugData);
+      //console.log("=====>>>", drugData);
 
       setDrugInfo(drugData);
     } catch (error) {
