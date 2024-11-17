@@ -338,7 +338,6 @@ const DataMatrix = () => {
       setIsLoading(false);
     } catch (e) {
       enqueueSnackbar(e.message, { variant: "error" });
-      console.error("Error updating applicant: ", e);
       setIsLoading(false);
     }
   }
@@ -378,12 +377,7 @@ const DataMatrix = () => {
             </p>
           )}
 
-          {/* {!isBarcode && (
-            <>
-              <div className="break-all">{rawData}</div>
-              <div className="break-all">{ndc}</div>
-            </>
-          )} */}
+          
 
           {scanResult && (
             <div className="space-y-2">

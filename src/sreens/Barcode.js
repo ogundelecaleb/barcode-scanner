@@ -38,7 +38,7 @@ const Barcode = () => {
   let userData = localStorage.getItem("auth");
   console.log(userData);
   if (!userData) {
-    return <Navigate to="/login" />;
+    <Navigate to="/login" />;
   } else {
     handleScanner();  }
     
