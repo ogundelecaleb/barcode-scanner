@@ -13,8 +13,8 @@ const Header = () => {
 
   useEffect(() => {
     getUser();
-    console.log("user Details====>>>>", details);
-  });
+    // console.log("user Details====>>>>", details);
+  }, []);
 
   async function getUser(page) {
     const response = await api.getUser();
