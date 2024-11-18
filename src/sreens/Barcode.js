@@ -29,25 +29,40 @@ const Barcode = () => {
   const [quantity, setQuantity] = useState("");
   const [gtin, setGtin] = useState("");
   const [unit, setUnit] = useState("");
-  const [price, setPrice] = useState("")
-  const navigate = useNavigate()
+  const [price, setPrice] = useState("");
+  const [isDrugLoading, setIsDrugLoading] = useState(false)
+  const navigate = useNavigate();
 
   let userData = localStorage.getItem("auth");
 
-
   useEffect(() => {
-
-  if (!userData) {
-    navigate("/login")
-  } else {
-    handleScanner(); 
-  
-
-  }
-    
+    if (!userData) {
+      navigate("/login");
+    } else {
+      handleScanner();
+    }
   }, []);
 
- 
+
+  function clearForm(){
+    setBarcodeData("");
+    setError(null);
+    setDrugInfo(null);
+    setFdaInfo("");
+    setNdc("");
+    setPo("");
+    setLot("");
+    setExpiration("");
+    setManufacturer("");
+    setNumOfContainers("");
+    setSerialNumber("");
+    setCoaAdjustment("");
+    setName("");
+    setQuantity("");
+    setGtin("");
+    setUnit("");
+    setPrice("");
+  }
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -127,18 +142,13 @@ const Barcode = () => {
 
         setBarcodeData(decodedText);
         fetchBarcodeDrugInfo(decodedResult?.decodedText);
-
-        // if (isBarcode) {
-        //   fetchBarcodeDrugInfo(decodedResult?.decodedText);
-        // } else {
-        //   handleScan(decodedResult?.decodedText);
-        // }
       }
       scannerRef.current = html5QrcodeScanner; // Store the scanner instance
     }
   };
 
   const fetchBarcodeDrugInfo = async (ndcCode) => {
+    setIsDrugLoading(true)
     try {
       //console.log("llll==>>>", ndcCode);
       const response = await fetch(
@@ -153,18 +163,21 @@ const Barcode = () => {
         setDrugInfo(data.results[0]);
         setName(data.results[0]?.openfda?.brand_name[0]);
         if (scannerRef.current) {
-          scannerRef.current.stop();
+          scannerRef.current.clear();
           scannerRef.current = null;
         }
+        setIsDrugLoading(false)
       } else {
         setFdaInfo(
           `No drug information found for this code.${formatNdcForOpenFda(
             ndcCode
           )}`
         );
+        setIsDrugLoading(false)
       }
     } catch (error) {
       setFdaInfo("Error fetching drug information.");
+      setIsDrugLoading(false)
       // //console.error(error);
     }
   };
@@ -186,7 +199,7 @@ const Barcode = () => {
         numOfContainers,
         po,
         quantity,
-        price
+        price,
       });
 
       enqueueSnackbar(response.message, { variant: "success" });
@@ -200,19 +213,29 @@ const Barcode = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-6">
-     <Header/>
+      <Header />
       <div className="mt-8">
-        <div className=" space-y-6">
-         
-
+        <div className=" space-y-">
           <h1 className="mt-[48px] text-[28px] md:text-[38px] text-center font-semibold ">
-            { "Barcode Scanner"}
+            {"Barcode Scanner"}
           </h1>
           <p className="text-center text-md text-gray-500 mt-1 ">
             {" "}
             Point your camera at a Data Matrix to scan
           </p>
-
+          {drugInfo && !scannerRef.current && (
+            <div className="flex justify-center w-full mb-2">
+              <button
+                className="border px-3 py-1 text-md mx-auto rounded-lg"
+                onClick={() => {
+                  handleScanner();
+                  clearForm();
+                }}
+              >
+                Scan Again
+              </button>
+            </div>
+          )}
           <div
             id="reader"
             style={{ width: "340px", margin: "auto" }}
@@ -221,13 +244,12 @@ const Barcode = () => {
 
           {barcodeData && (
             <>
-              <p>
+              <p className="text-[14px] mt-3">
                 Scanned Barcode: <strong>{barcodeData}</strong>
               </p>
-              <p>{`NDC nUMBER: ${formatNdcForOpenFda(barcodeData)}`}</p>
+              <p className="mt-1 mb-2 text-[14px]">{`NDC Number: ${formatNdcForOpenFda(barcodeData)}`}</p>
             </>
           )}
-       
 
           {error && (
             <p className="text-red-500 text-[14px] leading-3 text-center">
@@ -235,9 +257,15 @@ const Barcode = () => {
             </p>
           )}
 
+          {isDrugLoading && (
+            <div className="flex justify-center items-center gap-2"><ClipLoader color="#00B0AD" size={16} /><p className="text-[#00B0AD] text-[14px] ">Fetching Drug Info...</p></div>
+                          
+
+          )}
+
           {drugInfo && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Drug Information:</h3>
+            <div className="space-y-2 mt-4">
+              <h3 className="text-base font-semibold">Drug Information:</h3>
               <div className="grid grid-cols-2 gap-1 text-[14px] leading-[14px]">
                 <div>Brand Name:</div>
                 <div>{drugInfo?.openfda?.brand_name[0]}</div>
@@ -324,7 +352,7 @@ const Barcode = () => {
             value={numOfContainers}
             onChange={(e) => setNumOfContainers(e.target.value)}
           />
- <NormalInputField
+          <NormalInputField
             title="Price"
             isRequired={true}
             type="text"
@@ -371,7 +399,7 @@ const Barcode = () => {
           </button>
         </div>
       </form>
-      <Footer/>
+      <Footer />
     </div>
   );
 };

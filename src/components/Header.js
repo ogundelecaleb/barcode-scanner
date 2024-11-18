@@ -11,31 +11,30 @@ const Header = () => {
   const [isLogout, setIsLogout] = useState(false);
   const [details, setUserDetails] = useState(null);
 
-useEffect(()=> {
-    getUser()
-    console.log("user Details====>>>>",details )
-})
-
+  useEffect(() => {
+    getUser();
+    console.log("user Details====>>>>", details);
+  });
 
   async function getUser(page) {
-    const response = await api.getUser()
+    const response = await api.getUser();
     return setUserDetails(response);
   }
-  const url = 'https://bcrx-api.careapps.net'
+  const url = "https://bcrx-api.careapps.net";
   return (
     <>
       <div className="flex justify-between items-center ">
-      <div className="h-[30px] md:h-[45px] max-w-[90px] md:max-w-[130px] mr-3">
-                <img
-                  src={
-                    details?.pharmacy?.logo_path
-                      ? `${url}${details?.pharmacy?.logo_path}`
-                      : "./logo.png"
-                  }
-                  alt=""
-                  className="object-contain h-[30px] md:h-[45px] "
-                />
-              </div>
+        <div className="h-[30px] md:h-[45px] max-w-[90px] md:max-w-[130px] mr-3">
+          <img
+            src={
+              details?.pharmacy?.logo_path
+                ? `${url}${details?.pharmacy?.logo_path}`
+                : "./logo.png"
+            }
+            alt=""
+            className="object-contain h-[30px] md:h-[45px] "
+          />
+        </div>
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => {
