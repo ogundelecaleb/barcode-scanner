@@ -7,6 +7,7 @@ import NormalSelectInputField from "../components/NormalSelectInputField";
 import { ClipLoader } from "react-spinners";
 import { enqueueSnackbar } from "notistack";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const Barcode = () => {
   const [barcodeData, setBarcodeData] = useState("");
@@ -39,9 +40,14 @@ const Barcode = () => {
   if (!userData) {
     navigate("/login")
   } else {
-    handleScanner();  }
+    handleScanner(); 
+  
+
+  }
     
   }, []);
+
+ 
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -195,7 +201,7 @@ const Barcode = () => {
   return (
     <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-4">
      <Header/>
-      <div>
+      <div className="mt-8">
         <div className="space-y-4">
          
 
@@ -365,6 +371,7 @@ const Barcode = () => {
           </button>
         </div>
       </form>
+      <Footer/>
     </div>
   );
 };

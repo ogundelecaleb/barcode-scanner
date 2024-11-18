@@ -8,6 +8,7 @@ import NormalSelectInputField from "../components/NormalSelectInputField";
 import { enqueueSnackbar } from "notistack";
 import api from "../api";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const DataMatrix = () => {
   const [barcodeData, setBarcodeData] = useState("");
@@ -349,7 +350,7 @@ const DataMatrix = () => {
     <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-4">
       <Header />
 
-      <div>
+      <div className="mt-8">
         <div className="space-y-4">
           <h1 className="text-[28px] md:text-[34px] text-center font-semibold ">
             Data Matrix Scanner
@@ -538,6 +539,7 @@ const DataMatrix = () => {
           </button>
         </div>
       </form>
+      <Footer/>
     </div>
   );
 };

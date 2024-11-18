@@ -1,5 +1,5 @@
 import { LogOut } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
 import LogOutModal from "./LogOutModal";
@@ -9,21 +9,33 @@ import { CloseSquare } from "iconsax-react";
 const Header = () => {
   const navigate = useNavigate();
   const [isLogout, setIsLogout] = useState(false);
+  const [details, setUserDetails] = useState(null);
 
+useEffect(()=> {
+    getUser()
+    console.log("user Details====>>>>",details )
+})
+
+
+  async function getUser(page) {
+    const response = await api.getUser()
+    return setUserDetails(response);
+  }
+  const url = 'https://bcrx-api.careapps.net'
   return (
     <>
       <div className="flex justify-between items-center ">
-        {/* <LogOutModal
-    isOpen={isLogout}
-    onClose={() => setIsLogout(false)}
-    onConfirm={() => {
-      api.logout();
-      navigate("/login");
-      setIsLogout(false);
-    }}
-    
-    /> */}
-        <img src="./logo.png" alt="logo" className="h-[40px] md:h-[60px]" />
+      <div className="h-[40px] md:h-[60px] mr-3">
+                <img
+                  src={
+                    details?.pharmacy?.logo_path
+                      ? `${url}${details?.pharmacy?.logo_path}`
+                      : "./logo.png"
+                  }
+                  alt=""
+                  className="object-contain h-[35px] md:h-[45px] "
+                />
+              </div>
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => {
