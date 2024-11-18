@@ -25,7 +25,7 @@ useEffect(()=> {
   return (
     <>
       <div className="flex justify-between items-center ">
-      <div className="h-[40px] md:h-[60px] mr-3">
+      <div className="h-[30px] md:h-[45px] mr-3">
                 <img
                   src={
                     details?.pharmacy?.logo_path
@@ -33,7 +33,7 @@ useEffect(()=> {
                       : "./logo.png"
                   }
                   alt=""
-                  className="object-contain h-[35px] md:h-[45px] "
+                  className="object-contain h-[30px] md:h-[45px] "
                 />
               </div>
         <div className="flex-1 flex justify-center">

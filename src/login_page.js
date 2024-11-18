@@ -87,14 +87,7 @@ export default function LoginPage() {
                 placeholder="Enter password"
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <div className="flex justify-end">
-                <Link
-                  className="font-medium hover:underline text-[12px]"
-                  to="/auth/forgot-password"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+             
               <button
                 className="bg-[#00B0AD] py-3 disabled:cursor-not-allowed disabled:bg-primary-light disabled:text-primary shadow-md font-semibold flex items-center justify-center text-white rounded-[8px] text-[14px]"
                 type={"submit"}
@@ -105,15 +98,7 @@ export default function LoginPage() {
               <div className="font-semibold text-sm text-red-500">
                 {errorMessage}
               </div>
-              <div className="text-gray-500">
-                Don't have an account?
-                <Link
-                  //to="/auth/register"
-                  className="font-semibold text-[14px] ml-1 text-[#00B0AD]"
-                >
-                  Sign up
-                </Link>
-              </div>
+             
             </form>
           </>
         )}
