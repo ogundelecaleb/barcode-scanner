@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export async function getHeaders() {
-  let userData = localStorage.getItem("auth");
+  let userData = sessionStorage.getItem("auth");
   // console.log(userData.data.accessToken, "header");
   if (userData) {
     userData = JSON.parse(userData);
@@ -93,42 +93,42 @@ export function apiPut(endPoint, data, headers = {}) {
 
 export function setItem(key, data) {
   data = JSON.stringify(data);
-  return localStorage.setItem(key, data);
+  return sessionStorage.setItem(key, data);
 }
 
 export function getItem(key) {
   return new Promise((resolve, reject) => {
-    localStorage.getItem(key).then((data) => {
+    sessionStorage.getItem(key).then((data) => {
       resolve(data);
     });
   });
 }
 
 export function removeItem(key) {
-  return localStorage.removeItem(key);
+  return sessionStorage.removeItem(key);
 }
 
 export function clearAsyncStorate(key) {
-  return localStorage.clear();
+  return sessionStorage.clear();
 }
 
 export function setUserData(data) {
   data = JSON.stringify(data);
-  return localStorage.setItem("auth", data);
+  return sessionStorage.setItem("auth", data);
 }
 
 export function setUserTempData(data) {
   data = JSON.stringify(data);
-  return localStorage.setItem("userTempData", data);
+  return sessionStorage.setItem("userTempData", data);
 }
 
 export async function getUserData() {
   return new Promise((resolve, reject) => {
-    localStorage.getItem("auth").then((data) => {
+    sessionStorage.getItem("auth").then((data) => {
       resolve(data);
     });
   });
 }
 export async function clearUserData() {
-  return localStorage.removeItem("auth");
+  return sessionStorage.removeItem("auth");
 }

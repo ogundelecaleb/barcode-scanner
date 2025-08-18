@@ -34,7 +34,7 @@ const Barcode = () => {
 
   const navigate = useNavigate();
 
-  let userData = localStorage.getItem("auth");
+  let userData = sessionStorage.getItem("auth");
 
   useEffect(() => {
     if (!userData) {
