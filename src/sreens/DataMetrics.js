@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
-import { Link } from "react-router-dom";
-import { Camera } from "lucide-react";
+// import { Link } from "react-router-dom";
+// import { Camera } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import NormalInputField from "../components/NormalInputField";
 import NormalSelectInputField from "../components/NormalSelectInputField";
@@ -12,16 +12,18 @@ import Footer from "../components/Footer";
 
 const DataMatrix = () => {
   const [barcodeData, setBarcodeData] = useState("");
+  const [inventoryType, setInventoryType] = useState("Medication");
+
   const [error, setError] = useState(null);
   const scannerRef = useRef(null);
   const [drugInfo, setDrugInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isBarcode, setIsBarcode] = useState(true);
+  // const [isBarcode, setIsBarcode] = useState(true);
   const [ndc, setNdc] = useState("");
   const [po, setPo] = useState("");
   const [lot, setLot] = useState("");
   const [expiration, setExpiration] = useState("");
-  const [manufacturer, setManufacturer] = useState("");
+  // const [manufacturer, setManufacturer] = useState("");
   const [numOfContainers, setNumOfContainers] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [coaAdjustment, setCoaAdjustment] = useState("");
@@ -309,7 +311,7 @@ const DataMatrix = () => {
     setPo("");
     setLot("");
     setExpiration("");
-    setManufacturer("");
+    // setManufacturer("");
     setNumOfContainers("");
     setSerialNumber("");
     setCoaAdjustment("");
@@ -345,6 +347,20 @@ const DataMatrix = () => {
       setScanning(false);
     }
   };
+    const isButtonNotActive =
+    !name ||
+    // !gtin ||
+    !ndc ||
+    !lot ||
+    // !coaAdjustment ||
+    !expiration ||
+    !serialNumber ||
+    !quantity ||
+    // !unit ||
+    !numOfContainers ||
+    !price ||
+    !po || 
+    !inventoryType;
 
   async function handleCreateDrug(e) {
     e.preventDefault();
@@ -353,17 +369,18 @@ const DataMatrix = () => {
     try {
       const response = await api.createMedication({
         name,
-        gtin,
+        gtin: !gtin ? "NA" : gtin,
         ndc,
-        unit,
         lot,
-        coaAdjustment,
+        coaAdjustment: !coaAdjustment ? "NA" : coaAdjustment,
         expiration,
         serialNumber,
+        quantity,
+        unit: !unit ? "NA" : unit,
         numOfContainers,
         po,
-        quantity,
         price,
+        type: inventoryType,
       });
 
       enqueueSnackbar(response.message, { variant: "success" });
@@ -476,21 +493,29 @@ const DataMatrix = () => {
         className="px-3 md:px-5 py-3 text-[14px] space-y-4 mt-4"
       >
         <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+          <NormalSelectInputField
+            title="Inventory type"
+            values={["Medication", "Item"]}
+            onChange={(e) => setInventoryType(e.target.value)}
+            isRequired={true}
+            value={inventoryType}
+          />
+
           <NormalInputField
-            title="Medication Name"
+            title={`${inventoryType} Name`}
             isRequired={true}
             type="text"
-            value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
-          <NormalSelectInputField
-            title="Grade"
-            values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
-            value={gtin}
-            onChange={(e) => setGtin(e.target.value)}
-            isRequired={true}
-          />
+          {inventoryType === "Item" ? null : (
+            <NormalSelectInputField
+              title="Grade"
+              values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
+              onChange={(e) => setGtin(e.target.value)}
+              isRequired={true}
+            />
+          )}
           <NormalInputField
             title="NDC"
             isRequired={true}
@@ -547,28 +572,32 @@ const DataMatrix = () => {
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
+          {inventoryType === "Item" ? null : (
+            <NormalSelectInputField
+              onChange={(e) => setUnit(e.target.value)}
+              title="Select unit"
+              isRequired={true}
+              values={["GM", "MG", "MCG", "ML"]}
+            />
+          )}
 
-          <NormalSelectInputField
-            onChange={(e) => setUnit(e.target.value)}
-            title="Select unit"
-            isRequired={true}
-            value={unit}
-            values={["GM", "MG", "MCG", "ML"]}
-          />
-          <NormalInputField
-            title="CoA Adjustment %"
-            isRequired={true}
-            type="number"
-            value={coaAdjustment}
-            onChange={(e) => setCoaAdjustment(e.target.value)}
-          />
+          {inventoryType === "Item" ? null : (
+            <>
+              <NormalInputField
+                title="CoA Adjustment %"
+                isRequired={true}
+                type="text"
+                onChange={(e) => setCoaAdjustment(e.target.value)}
+              />
 
-          <NormalInputField
-            title="CoA Document"
-            isRequired={false}
-            type="file"
-            onChange={(e) => setCoaAdjustment(e.target.value)}
-          />
+              <NormalInputField
+                title="CoA Document"
+                isRequired={false}
+                type="file"
+                // onChange={(e) => setCoaAdjustmer(e.target.value)}
+              />
+            </>
+          )}
         </div>
         <div className="mt-4">
           <div className="text-[14px] font-semibold py-1 text-red-500">
@@ -578,7 +607,7 @@ const DataMatrix = () => {
           <button
             className="bg-[#00B0AD] py-3 px-3 disabled:cursor-not-allowed disabled:bg-primary-light disabled:text-primary shadow-md font-semibold flex items-center justify-center text-white rounded-[8px] text-[14px]"
             type={"submit"}
-            // disabled={isLoading}
+            disabled={isLoading || isButtonNotActive}
           >
             {isLoading ? (
               <ClipLoader color="white" size={16} />

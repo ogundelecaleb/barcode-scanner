@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import {  useNavigate } from "react-router-dom";
 import api from "../api";
 import NormalInputField from "../components/NormalInputField";
 import NormalSelectInputField from "../components/NormalSelectInputField";
@@ -15,7 +15,6 @@ const Barcode = () => {
   const scannerRef = useRef(null);
   const [drugInfo, setDrugInfo] = useState(null);
   const [fdaInfo, setFdaInfo] = useState("");
-  const [isBarcode, setIsBarcode] = useState(true);
   const [ndc, setNdc] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [po, setPo] = useState("");
@@ -31,6 +30,8 @@ const Barcode = () => {
   const [unit, setUnit] = useState("");
   const [price, setPrice] = useState("");
   const [isDrugLoading, setIsDrugLoading] = useState(false)
+    const [inventoryType, setInventoryType] = useState("Medication")
+
   const navigate = useNavigate();
 
   let userData = localStorage.getItem("auth");
@@ -181,32 +182,49 @@ const Barcode = () => {
       // //console.error(error);
     }
   };
+   const isButtonNotActive =
+    !name ||
+    // !gtin ||
+    !ndc ||
+    !lot ||
+    // !coaAdjustment ||
+    !expiration ||
+    !serialNumber ||
+    !quantity ||
+    // !unit ||
+    !numOfContainers ||
+    !price ||
+    !po || 
+    !inventoryType;
 
   async function handleCreateDrug(e) {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await api.createMedication({
-        name,
-        gtin,
-        unit,
+      const response = await api.createMedication(
+          {
+          name,
+          gtin: !gtin ? "NA" : gtin,
         ndc: formatNdcForOpenFda(barcodeData) || ndc,
-        lot,
-        coaAdjustment,
-        expiration,
-        serialNumber,
-        numOfContainers,
-        po,
-        quantity,
-        price,
-      });
+          lot,
+          coaAdjustment: !coaAdjustment ? "NA" : coaAdjustment,
+          expiration,
+          serialNumber,
+          quantity,
+          unit: !unit ? "NA" : unit,
+          numOfContainers,
+          po,
+          price,
+          type: inventoryType
+        },
+        
+      );
 
       enqueueSnackbar(response.message, { variant: "success" });
       setIsLoading(false);
     } catch (e) {
       enqueueSnackbar(e.message, { variant: "error" });
-      //console.error("Error updating applicant: ", e);
       setIsLoading(false);
     }
   }
@@ -271,8 +289,7 @@ const Barcode = () => {
                 <div>{drugInfo?.openfda?.brand_name[0]}</div>
                 <div>Generic Name:</div>
                 <div>{drugInfo?.openfda?.generic_name[0]}</div>
-                {/* <div>Manufacturer:</div>
-              <div>{drugInfo?.openfda?.labeler_name[0]}</div> */}
+                
                 <div>Route:</div>
                 <div>{drugInfo?.openfda?.route[0]}</div>
                 <div>Product Type:</div>
@@ -283,26 +300,37 @@ const Barcode = () => {
         </div>
       </div>
 
+
       <form
         onSubmit={handleCreateDrug}
         className="px-5 py-3 text-[14px] space-y-4 mt-4"
       >
         <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-          <NormalInputField
-            title="Medication Name"
-            isRequired={true}
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+           <NormalSelectInputField 
+              title="Inventory type"
+              values={["Medication", "Item"]}
+              onChange={(e) => setInventoryType(e.target.value)}
+              isRequired={true}
+              value={inventoryType}
+            />
 
-          <NormalSelectInputField
-            title="Grade"
-            values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
-            value={gtin}
-            onChange={(e) => setGtin(e.target.value)}
-            isRequired={true}
-          />
+            <NormalInputField
+              title={`${inventoryType} Name`}
+              isRequired={true}
+              type="text"
+              onChange={(e) => setName(e.target.value)}
+            />
+         
+
+         {
+              inventoryType === "Item" ? null :
+              <NormalSelectInputField 
+                title="Grade"
+                values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
+                onChange={(e) => setGtin(e.target.value)}
+                isRequired={true}
+              />
+            }
           <NormalInputField
             title="NDC"
             isRequired={true}
@@ -359,27 +387,39 @@ const Barcode = () => {
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
-          <NormalSelectInputField
-            onChange={(e) => setUnit(e.target.value)}
-            title="Select unit"
-            isRequired={true}
-            value={unit}
-            values={["GM", "MG", "MCG", "ML"]}
-          />
-          <NormalInputField
-            title="CoA Adjustment %"
-            isRequired={true}
-            type="number"
-            value={coaAdjustment}
-            onChange={(e) => setCoaAdjustment(e.target.value)}
-          />
+        {
+              inventoryType === "Item" ? null :
+              <NormalSelectInputField 
+                onChange={(e) => setUnit(e.target.value)}
+                title="Select unit"
+                isRequired={true}
+                values={[
+                  "GM",
+                  "MG",
+                  "MCG",
+                  "ML"
+                ]}
+              />
+            }
 
-          <NormalInputField
-            title="CoA Document"
-            isRequired={false}
-            type="file"
-            onChange={(e) => setCoaAdjustment(e.target.value)}
-          />
+           {
+              inventoryType === "Item" ? null :
+              <>
+                <NormalInputField
+                  title="CoA Adjustment %"
+                  isRequired={true}
+                  type="text"
+                  onChange={(e) => setCoaAdjustment(e.target.value)}
+                />
+
+                <NormalInputField
+                  title="CoA Document"
+                  isRequired={false}
+                  type="file"
+                // onChange={(e) => setCoaAdjustmer(e.target.value)}
+                />
+              </>
+            }
         </div>
         <div className="mt-4">
           <div className="text-[14px] font-semibold py-1 text-red-500">
@@ -389,7 +429,7 @@ const Barcode = () => {
           <button
             className="bg-[#00B0AD] py-3 px-3 disabled:cursor-not-allowed disabled:bg-primary-light disabled:text-primary shadow-md font-semibold flex items-center justify-center text-white rounded-[8px] text-[14px]"
             type={"submit"}
-            // disabled={isLoading}
+          disabled={isLoading || isButtonNotActive}
           >
             {isLoading ? (
               <ClipLoader color="white" size={16} />

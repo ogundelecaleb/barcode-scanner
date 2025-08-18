@@ -1,14 +1,14 @@
-import { Sms, User } from "iconsax-react";
+import { Sms} from "iconsax-react";
 
-import { Link, useNavigate } from "react-router-dom";
+import {useNavigate } from "react-router-dom";
 
 import { useState } from "react";
 import PasswordField from "./components/PasswordField";
 import InputField from "./components/InputField";
-import AuthButton from "./components/AuthButton";
 import { ClipLoader } from "react-spinners";
 import api from "./api";
 import { setUserData } from "./utils/utils";
+import { enqueueSnackbar } from "notistack";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -18,7 +18,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [success, setSuccess] = useState(false);
 
-  // const btnDisabled = !email || !password;
+  const btnDisabled = !email || !password;
   async function login(e) {
     e.preventDefault();
 
@@ -31,36 +31,18 @@ export default function LoginPage() {
       });
 
        setUserData(response?.ACCESS_TOKEN);
-      //  console.log("decrypt form login",decryptaValue(response?.data) )
       setLoading(false);
+      enqueueSnackbar("Login successful", { variant: "success" })
       navigate("/");
     } catch (error) {
       console.log("error", error);
-      // enqueueSnackbar(error.msg, { variant: "error" });
-      // enqueueSnackbar("errooor", { variant: "error" });
+      enqueueSnackbar(error.message, { variant: "error" });
+      setErrorMessage(error.message)
       setLoading(false);
     }
   }
 
-  // const handleLogin = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true)
-  //   setErrorMessage("");
-  //   try {
-  //     const res = await instance.post("/pharmacy/auth/login", {
-  //       email,
-  //       password,
-  //     });
-  //     saveToken(res.data.ACCESS_TOKEN);
-  //     navigate("/dashboard/overview");
-
-  //     // setSuccess(true);
-  //     // setLoading(false);
-  //   } catch (error) {
-  //     setErrorMessage(error.response.data.message);
-  //     setLoading(false);
-  //   }
-  // };
+  
   return (
     <div className="h-[100vh] bg-[#f1f1f1] flex flex-col justify-center items-center">
       <div className="bg-white flex flex-col justify-center items-center py-12 px-10 shadow-lg rounded-[10px]">
@@ -91,7 +73,7 @@ export default function LoginPage() {
               <button
                 className="bg-[#00B0AD] py-3 disabled:cursor-not-allowed disabled:bg-primary-light disabled:text-primary shadow-md font-semibold flex items-center justify-center text-white rounded-[8px] text-[14px]"
                 type={"submit"}
-                disabled={loading}
+                disabled={loading || btnDisabled}
               >
                 {loading ? <ClipLoader color="white" size={16}/> : "Sign In"}
               </button>
