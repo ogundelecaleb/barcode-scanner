@@ -1,5 +1,5 @@
 
-import { ADDMEDICATION, GETUSER } from "../utils/config";
+import { ADDMEDICATION, GETUSER, GETDRUGDETAILS } from "../utils/config";
 import { apiDelete, apiGet, apiGetCSV, apiPost, apiPut } from "../utils/utils";
 
 //transaction
@@ -10,6 +10,9 @@ export function createMedication(data) {
 }
 export function getUser(data) {
   return apiGet(GETUSER, data);
+}
+export function getDrugDetails(data) {
+  return apiPost(GETDRUGDETAILS, data);
 }
 
 

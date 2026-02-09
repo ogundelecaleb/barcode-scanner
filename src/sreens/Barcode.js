@@ -30,7 +30,9 @@ const Barcode = () => {
   const [unit, setUnit] = useState("");
   const [price, setPrice] = useState("");
   const [isDrugLoading, setIsDrugLoading] = useState(false)
-    const [inventoryType, setInventoryType] = useState("Medication")
+  const [inventoryType, setInventoryType] = useState("Medication")
+  const [location, setLocation] = useState("");
+  const [manufacturerName, setManufacturerName] = useState("");
 
   const navigate = useNavigate();
 
@@ -63,6 +65,8 @@ const Barcode = () => {
     setGtin("");
     setUnit("");
     setPrice("");
+    setLocation("");
+    setManufacturerName("");
   }
 
   const formatNdcForOpenFda = (ndcCode) => {
@@ -195,6 +199,8 @@ const Barcode = () => {
     !numOfContainers ||
     !price ||
     !po || 
+    !location ||
+    !manufacturerName ||
     !inventoryType;
 
   async function handleCreateDrug(e) {
@@ -216,7 +222,9 @@ const Barcode = () => {
           numOfContainers,
           po,
           price,
-          type: inventoryType
+          type: inventoryType,
+          location,
+          manufacturer_name: manufacturerName
         },
         
       );
@@ -308,7 +316,7 @@ const Barcode = () => {
         <div className="grid grid-cols-2 gap-x-3 gap-y-4">
            <NormalSelectInputField 
               title="Inventory type"
-              values={["Medication", "Item"]}
+              values={["Medication", "Supply"]}
               onChange={(e) => setInventoryType(e.target.value)}
               isRequired={true}
               value={inventoryType}
@@ -319,16 +327,34 @@ const Barcode = () => {
               isRequired={true}
               type="text"
               onChange={(e) => setName(e.target.value)}
+              value={name}
+            />
+
+            <NormalInputField
+              title={`${inventoryType} Location`}
+              isRequired={true}
+              type="text"
+              onChange={(e) => setLocation(e.target.value)}
+              value={location}
+            />
+
+            <NormalInputField
+              title="Manufacturer Name"
+              isRequired={true}
+              type="text"
+              onChange={(e) => setManufacturerName(e.target.value)}
+              value={manufacturerName}
             />
          
 
          {
-              inventoryType === "Item" ? null :
+              inventoryType === "Supply" ? null :
               <NormalSelectInputField 
                 title="Grade"
                 values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
                 onChange={(e) => setGtin(e.target.value)}
                 isRequired={true}
+                value={gtin}
               />
             }
           <NormalInputField
@@ -369,27 +395,18 @@ const Barcode = () => {
           <NormalInputField
             title="Quantity"
             isRequired={true}
-            type="number"
+            type="text"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
           />
           <NormalInputField
-            title="Number of containers"
-            isRequired={true}
-            type="number"
-            value={numOfContainers}
-            onChange={(e) => setNumOfContainers(e.target.value)}
-          />
-          <NormalInputField
-            title="Price"
+            title="Price ($)"
             isRequired={true}
             type="text"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
-        {
-              inventoryType === "Item" ? null :
-              <NormalSelectInputField 
+        <NormalSelectInputField 
                 onChange={(e) => setUnit(e.target.value)}
                 title="Select unit"
                 isRequired={true}
@@ -399,24 +416,33 @@ const Barcode = () => {
                   "MCG",
                   "ML"
                 ]}
+                value={unit}
               />
-            }
+
+          <NormalInputField
+            title="Number of containers"
+            isRequired={true}
+            type="number"
+            value={numOfContainers}
+            onChange={(e) => setNumOfContainers(e.target.value)}
+          />
 
            {
-              inventoryType === "Item" ? null :
+              inventoryType === "Supply" ? null :
               <>
                 <NormalInputField
                   title="CoA Adjustment %"
                   isRequired={true}
                   type="text"
                   onChange={(e) => setCoaAdjustment(e.target.value)}
+                  value={coaAdjustment}
                 />
 
                 <NormalInputField
                   title="CoA Document"
                   isRequired={false}
                   type="file"
-                // onChange={(e) => setCoaAdjustmer(e.target.value)}
+                // onChange={(e) => setCoaAdjustment(e.target.value)}
                 />
               </>
             }

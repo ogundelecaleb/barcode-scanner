@@ -45,14 +45,24 @@ const Header = () => {
           </button>
         </div>
 
-        <Link
-          to={window.location.pathname === "/" ? "data-matrix" : "/"}
-          className="px-2 py-1 rounded-lg border text-[13px]  hover:bg-[#f4f3f3]"
-        >
-          {window.location.pathname === "/"
-            ? "Scan DataMatrix"
-            : "Scan Barcode"}
-        </Link>
+        <div className="flex gap-2">
+          {window.location.pathname !== "/drug-lookup" && (
+            <Link
+              to="/drug-lookup"
+              className="px-2 py-1 rounded-lg border text-[13px]  hover:bg-[#f4f3f3]"
+            >
+              Drug Lookup
+            </Link>
+          )}
+          <Link
+            to={window.location.pathname === "/" ? "data-matrix" : "/"}
+            className="px-2 py-1 rounded-lg border text-[13px]  hover:bg-[#f4f3f3]"
+          >
+            {window.location.pathname === "/"
+              ? "Scan DataMatrix"
+              : "Scan Barcode"}
+          </Link>
+        </div>
       </div>
 
       <Modal isOpen={isLogout} onClose={() => setIsLogout(false)}>

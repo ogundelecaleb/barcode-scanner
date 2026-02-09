@@ -7,3 +7,4 @@ export const getApiUrl = (endpoint) => API_BASE_URL + endpoint
 
 export const ADDMEDICATION = getApiUrl('/pharmacy/inventory/new')
 export const GETUSER = getApiUrl('/pharmacy/user')
+export const GETDRUGDETAILS = getApiUrl('/pharmacy/inventory/get-drug')

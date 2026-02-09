@@ -12,6 +12,7 @@ import DataMatrixScanner from "./sreens/DataMetrics";
 import DataMatrix from "./sreens/DataMetrics";
 import DataMatrix2 from "./DataMetrics copy 2";
 import LoginPage from "./login_page";
+import DrugLookup from "./sreens/DrugLookup";
 import { SnackbarProvider } from "notistack";
 
 
@@ -31,6 +32,7 @@ function App() {
           <Route path="/data-matrix" element={<DataMatrix />} />
           <Route path="/matrix2" element={<DataMatrix2 />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/drug-lookup" element={<DrugLookup />} />
         </Routes>
       </Router>
     </div>
