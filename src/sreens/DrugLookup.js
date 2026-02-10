@@ -133,7 +133,7 @@ const DrugLookup = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+              <div className="bg-white rounded-lg p-2 border border-gray-100 shadow-sm">
                 <h4 className="text-sm font-semibold text-gray-500 uppercase mb-3">Inventory Details</h4>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-[14px]">
                   <div className="flex justify-between border-b border-gray-100 pb-2">
