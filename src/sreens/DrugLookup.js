@@ -172,7 +172,7 @@ const DrugLookup = () => {
                   </div>
                   <div className="flex justify-between border-b border-gray-100 pb-2">
                     <span className="text-gray-600">Location:</span>
-                    <span className="font-medium text-gray-900">{drugDetails.location}</span>
+                    <span className="font-medium text-[#00B0AD]">{drugDetails.location}</span>
                   </div>
                 </div>
               </div>
