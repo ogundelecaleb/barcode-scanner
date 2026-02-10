@@ -70,10 +70,10 @@ const DrugLookup = () => {
       <Header />
       <div className="mt-8">
         <h1 className="mt-[48px] text-[28px] md:text-[38px] text-center font-semibold">
-          Drug Lookup Scanner
+          Inventory Lookup Scanner
         </h1>
         <p className="text-center text-md text-gray-500 mt-1">
-          Scan barcode to view drug details
+          Scan barcode to view inventory details
         </p>
 
         {drugDetails && !scannerRef.current && (
