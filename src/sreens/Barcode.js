@@ -406,7 +406,10 @@ const Barcode = () => {
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
-        <NormalSelectInputField 
+
+          {
+            !inventoryType === "Supply" &&
+            <NormalSelectInputField 
                 onChange={(e) => setUnit(e.target.value)}
                 title="Select unit"
                 isRequired={true}
@@ -418,9 +421,11 @@ const Barcode = () => {
                 ]}
                 value={unit}
               />
+          }
+        
 
           <NormalInputField
-            title="Number of containers"
+            title="Number of containers / boxes"
             isRequired={true}
             type="number"
             value={numOfContainers}
@@ -460,7 +465,7 @@ const Barcode = () => {
             {isLoading ? (
               <ClipLoader color="white" size={16} />
             ) : (
-              "Add Medication +"
+              `Add ${inventoryType === "Supply" ? "Supply" : "Medication"} +`
             )}
           </button>
         </div>
