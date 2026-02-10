@@ -51,7 +51,7 @@ const Header = () => {
               to="/drug-lookup"
               className="px-2 py-1 rounded-lg border text-[13px]  hover:bg-[#f4f3f3]"
             >
-              Drug Lookup
+              Inventory Lookup
             </Link>
           )}
           <Link
