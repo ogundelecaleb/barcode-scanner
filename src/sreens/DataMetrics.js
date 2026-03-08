@@ -1,26 +1,29 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
-import { Link } from "react-router-dom";
-import { Camera } from "lucide-react";
+// import { Link } from "react-router-dom";
+// import { Camera } from "lucide-react";
 import { ClipLoader } from "react-spinners";
 import NormalInputField from "../components/NormalInputField";
 import NormalSelectInputField from "../components/NormalSelectInputField";
 import { enqueueSnackbar } from "notistack";
 import api from "../api";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const DataMatrix = () => {
   const [barcodeData, setBarcodeData] = useState("");
+  const [inventoryType, setInventoryType] = useState("Medication");
+
   const [error, setError] = useState(null);
   const scannerRef = useRef(null);
   const [drugInfo, setDrugInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isBarcode, setIsBarcode] = useState(true);
+  // const [isBarcode, setIsBarcode] = useState(true);
   const [ndc, setNdc] = useState("");
   const [po, setPo] = useState("");
   const [lot, setLot] = useState("");
   const [expiration, setExpiration] = useState("");
-  const [manufacturer, setManufacturer] = useState("");
+  // const [manufacturer, setManufacturer] = useState("");
   const [numOfContainers, setNumOfContainers] = useState("");
   const [serialNumber, setSerialNumber] = useState("");
   const [coaAdjustment, setCoaAdjustment] = useState("");
@@ -28,8 +31,8 @@ const DataMatrix = () => {
   const [quantity, setQuantity] = useState("");
   const [gtin, setGtin] = useState("");
   const [unit, setUnit] = useState("");
-  const [price, setPrice] = useState("")
-
+  const [price, setPrice] = useState("");
+  const [isDrugLoading, setIsDrugLoading] = useState(false);
 
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
@@ -51,7 +54,7 @@ const DataMatrix = () => {
       // Start the scanner
 
       function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Code scanned = ${decodedText}`, decodedResult);
+        //console.log(`Code scanned = ${decodedText}`, decodedResult);
 
         setBarcodeData(decodedText);
         handleScan(decodedResult?.decodedText);
@@ -106,12 +109,12 @@ const DataMatrix = () => {
         date.getMonth() !== month - 1 ||
         date.getDate() !== day
       ) {
-        console.log("Invalid date");
+        //console.log("Invalid date");
       }
 
       return date.toISOString().split("T")[0];
     } catch (error) {
-      console.log(`Invalid date format: ${dateStr}`);
+      //console.log(`Invalid date format: ${dateStr}`);
     }
   };
 
@@ -170,21 +173,21 @@ const DataMatrix = () => {
         switch (foundAI.ai) {
           case "01": // GTIN
             if (!validateGTINCheckDigit(value)) {
-              console.log("Invalid GTIN check digit");
+              //console.log("Invalid GTIN check digit");
             }
             parsedData.gtin = value;
             break;
 
           case 21: // Serial
             if (value.length > 20) {
-              console.log("Serial number too long");
+              //console.log("Serial number too long");
             }
             parsedData.serial = value;
             break;
 
           case "10": // Lot/Batch
             if (value.length > 20) {
-              console.log("Lot number too long");
+              //console.log("Lot number too long");
             }
             parsedData.lot = value;
             break;
@@ -205,12 +208,12 @@ const DataMatrix = () => {
 
       // Validate required fields
       if (!parsedData.gtin) {
-        console.log("GTIN is required but not found");
+        //console.log("GTIN is required but not found");
       }
 
       return parsedData;
     } catch (error) {
-      console.log(`Data matrix parsing error: ${error.message}`);
+      //console.log(`Data matrix parsing error: ${error.message}`);
     }
   };
 
@@ -222,7 +225,7 @@ const DataMatrix = () => {
 
       // Validate numeric
       if (!/^\d{10}$/.test(ndcPart)) {
-        console.log("Invalid NDC format");
+        //console.log("Invalid NDC format");
       }
 
       // Try different NDC formats (5-4-1, 5-3-2, 4-4-2)
@@ -248,14 +251,16 @@ const DataMatrix = () => {
         }
       }
 
-      console.log("Could not determine NDC format");
+      //console.log("Could not determine NDC format");
     } catch (error) {
-      console.log(`NDC conversion error: ${error.message}`);
+      //console.log(`NDC conversion error: ${error.message}`);
     }
   };
 
   // Fetch drug info from OpenFDA with enhanced error handling
   const fetchDrugInfo = async (ndc) => {
+    setIsDrugLoading(true);
+
     try {
       const response = await fetch(
         `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${ndc}`
@@ -263,35 +268,62 @@ const DataMatrix = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.log(errorData.error?.message || "API request failed");
+        //console.log(errorData.error?.message || "API request failed");
+        setIsDrugLoading(false);
+        return null;
       }
 
       const data = await response.json();
 
       if (!data.results || data.results.length === 0) {
-        console.log("Drug not found in OpenFDA database");
+        //console.log("Drug not found in OpenFDA database");
+        setError("Drug not found in OpenFDA databas");
+        setIsDrugLoading(false);
+        return null;
       }
       if (data.results || data.results.length > 0) {
-        // if (scannerRef.current) {
-        //   scannerRef.current.stop();
-        //   scannerRef.current = null;
-        // }
+        if (scannerRef.current) {
+          scannerRef.current.clear();
+          scannerRef.current = null;
+        }
+        setIsDrugLoading(false);
         setName(data.results[0]?.openfda?.brand_name[0]);
       }
 
       return data.results[0];
     } catch (error) {
       if (error.message.includes("API request failed")) {
-        console.log("OpenFDA API error: " + error.message);
+        //console.log("OpenFDA API error: " + error.message);
+        setError("OpenFDA API error: " + error.message);
+        setIsDrugLoading(false);
       }
-      console.log("Failed to fetch drug information: " + error.message);
+      //console.log("Failed to fetch drug information: " + error.message);
     }
   };
 
+  function clearForm() {
+    setBarcodeData("");
+    setError(null);
+    setDrugInfo(null);
+    setScanResult(null);
+
+    setNdc("");
+    setPo("");
+    setLot("");
+    setExpiration("");
+    // setManufacturer("");
+    setNumOfContainers("");
+    setSerialNumber("");
+    setCoaAdjustment("");
+    setName("");
+    setQuantity("");
+    setGtin("");
+    setUnit("");
+    setPrice("");
+  }
+
   // Handle camera scan
   const handleScan = async (ScanData) => {
-    setScanning(true);
-
     try {
       //ScanData = "01123456789012340921123456\u001D17240531\u001D10ABC123\u001D11240125";
       setRawData(ScanData);
@@ -307,7 +339,6 @@ const DataMatrix = () => {
       setNdc(ndcc);
 
       const drugData = await fetchDrugInfo(ndcc);
-      console.log("=====>>>", drugData);
 
       setDrugInfo(drugData);
     } catch (error) {
@@ -316,6 +347,20 @@ const DataMatrix = () => {
       setScanning(false);
     }
   };
+    const isButtonNotActive =
+    !name ||
+    // !gtin ||
+    !ndc ||
+    !lot ||
+    // !coaAdjustment ||
+    !expiration ||
+    !serialNumber ||
+    !quantity ||
+    // !unit ||
+    !numOfContainers ||
+    !price ||
+    !po || 
+    !inventoryType;
 
   async function handleCreateDrug(e) {
     e.preventDefault();
@@ -324,17 +369,18 @@ const DataMatrix = () => {
     try {
       const response = await api.createMedication({
         name,
-        gtin,
+        gtin: !gtin ? "NA" : gtin,
         ndc,
-        unit,
         lot,
-        coaAdjustment,
+        coaAdjustment: !coaAdjustment ? "NA" : coaAdjustment,
         expiration,
         serialNumber,
+        quantity,
+        unit: !unit ? "NA" : unit,
         numOfContainers,
         po,
-        quantity,
-        price
+        price,
+        type: inventoryType,
       });
 
       enqueueSnackbar(response.message, { variant: "success" });
@@ -346,18 +392,32 @@ const DataMatrix = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-4">
+    <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-6">
       <Header />
 
-      <div>
-        <div className="space-y-4">
-          <h1 className="text-[28px] md:text-[34px] text-center font-semibold ">
+      <div className="mt-8">
+        <div className=" ">
+          <h1 className="mt-[48px] text-[28px] md:text-[34px] text-center font-semibold ">
             Data Matrix Scanner
           </h1>
           <p className="text-center text-md text-gray-500 mt-1 ">
             {" "}
             Point your camera at a Data Matrix to scan
           </p>
+
+          {drugInfo && !scannerRef.current && (
+            <div className="flex justify-center w-full mb-2">
+              <button
+                className="border px-3 py-1 text-md mx-auto rounded-lg"
+                onClick={() => {
+                  handleScanner();
+                  clearForm();
+                }}
+              >
+                Scan Again
+              </button>
+            </div>
+          )}
 
           <div
             id="reader"
@@ -367,10 +427,10 @@ const DataMatrix = () => {
 
           {barcodeData && (
             <>
-              <p className="text-md leading-[17px]">
+              <p className="text-[14px] mt-3">
                 Scanned Barcode: <strong>{barcodeData}</strong>
               </p>
-              <p className="text-md leading-[17px]">{`NDC Number: ${ndc}`}</p>
+              <p className="mt-1 mb-2 text-[14px]">{`NDC Number: ${ndc}`}</p>
             </>
           )}
 
@@ -380,11 +440,18 @@ const DataMatrix = () => {
             </p>
           )}
 
-          
+          {isDrugLoading && (
+            <div className="flex justify-center items-center gap-2">
+              <ClipLoader color="#00B0AD" size={16} />
+              <p className="text-[#00B0AD] text-[14px] ">
+                Fetching Drug Info...
+              </p>
+            </div>
+          )}
 
           {scanResult && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Scan Result:</h3>
+            <div className="space-y-2 mt-3">
+              <h3 className="text-base font-semibold">Scan Result:</h3>
               <div className="grid grid-cols-2 gap-1 text-[14px] leading-[14px]">
                 <div>Raw Data:</div>
                 <div className="break-all">{rawData}</div>
@@ -401,8 +468,8 @@ const DataMatrix = () => {
           )}
 
           {drugInfo && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Drug Information:</h3>
+            <div className="space-y-2 mt-4">
+              <h3 className="text-base font-semibold">Drug Information:</h3>
               <div className="grid grid-cols-2 gap-1 text-[14px] leading-[14px]">
                 <div>Brand Name:</div>
                 <div>{drugInfo?.openfda?.brand_name[0]}</div>
@@ -426,21 +493,29 @@ const DataMatrix = () => {
         className="px-3 md:px-5 py-3 text-[14px] space-y-4 mt-4"
       >
         <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+          <NormalSelectInputField
+            title="Inventory type"
+            values={["Medication", "Item"]}
+            onChange={(e) => setInventoryType(e.target.value)}
+            isRequired={true}
+            value={inventoryType}
+          />
+
           <NormalInputField
-            title="Medication Name"
+            title={`${inventoryType} Name`}
             isRequired={true}
             type="text"
-            value={name}
             onChange={(e) => setName(e.target.value)}
           />
 
-          <NormalSelectInputField
-            title="Grade"
-            values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
-            value={gtin}
-            onChange={(e) => setGtin(e.target.value)}
-            isRequired={true}
-          />
+          {inventoryType === "Item" ? null : (
+            <NormalSelectInputField
+              title="Grade"
+              values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
+              onChange={(e) => setGtin(e.target.value)}
+              isRequired={true}
+            />
+          )}
           <NormalInputField
             title="NDC"
             isRequired={true}
@@ -490,35 +565,39 @@ const DataMatrix = () => {
             value={numOfContainers}
             onChange={(e) => setNumOfContainers(e.target.value)}
           />
-           <NormalInputField
+          <NormalInputField
             title="Price"
             isRequired={true}
             type="text"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
+          {inventoryType === "Item" ? null : (
+            <NormalSelectInputField
+              onChange={(e) => setUnit(e.target.value)}
+              title="Select unit"
+              isRequired={true}
+              values={["GM", "MG", "MCG", "ML"]}
+            />
+          )}
 
-          <NormalSelectInputField
-            onChange={(e) => setUnit(e.target.value)}
-            title="Select unit"
-            isRequired={true}
-            value={unit}
-            values={["GM", "MG", "MCG", "ML"]}
-          />
-          <NormalInputField
-            title="CoA Adjustment %"
-            isRequired={true}
-            type="number"
-            value={coaAdjustment}
-            onChange={(e) => setCoaAdjustment(e.target.value)}
-          />
+          {inventoryType === "Item" ? null : (
+            <>
+              <NormalInputField
+                title="CoA Adjustment %"
+                isRequired={true}
+                type="text"
+                onChange={(e) => setCoaAdjustment(e.target.value)}
+              />
 
-          <NormalInputField
-            title="CoA Document"
-            isRequired={false}
-            type="file"
-            onChange={(e) => setCoaAdjustment(e.target.value)}
-          />
+              <NormalInputField
+                title="CoA Document"
+                isRequired={false}
+                type="file"
+                // onChange={(e) => setCoaAdjustmer(e.target.value)}
+              />
+            </>
+          )}
         </div>
         <div className="mt-4">
           <div className="text-[14px] font-semibold py-1 text-red-500">
@@ -528,7 +607,7 @@ const DataMatrix = () => {
           <button
             className="bg-[#00B0AD] py-3 px-3 disabled:cursor-not-allowed disabled:bg-primary-light disabled:text-primary shadow-md font-semibold flex items-center justify-center text-white rounded-[8px] text-[14px]"
             type={"submit"}
-            // disabled={isLoading}
+            disabled={isLoading || isButtonNotActive}
           >
             {isLoading ? (
               <ClipLoader color="white" size={16} />
@@ -538,6 +617,7 @@ const DataMatrix = () => {
           </button>
         </div>
       </form>
+      <Footer />
     </div>
   );
 };

@@ -1,29 +1,39 @@
 import { LogOut } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api";
-import LogOutModal from "./LogOutModal";
 import Modal from "./Modal";
 import { CloseSquare } from "iconsax-react";
 
 const Header = () => {
   const navigate = useNavigate();
   const [isLogout, setIsLogout] = useState(false);
+  const [details, setUserDetails] = useState(null);
 
+  useEffect(() => {
+    getUser();
+    // console.log("user Details====>>>>", details);
+  }, []);
+
+  async function getUser(page) {
+    const response = await api.getUser();
+    return setUserDetails(response);
+  }
+  const url = "https://bcrx-api.careapps.net";
   return (
     <>
       <div className="flex justify-between items-center ">
-        {/* <LogOutModal
-    isOpen={isLogout}
-    onClose={() => setIsLogout(false)}
-    onConfirm={() => {
-      api.logout();
-      navigate("/login");
-      setIsLogout(false);
-    }}
-    
-    /> */}
-        <img src="./logo.png" alt="logo" className="h-[40px] md:h-[60px]" />
+        <div className="h-[30px] md:h-[45px] max-w-[90px] md:max-w-[130px] mr-3">
+          <img
+            src={
+              details?.pharmacy?.logo_path
+                ? `${url}${details?.pharmacy?.logo_path}`
+                : "./logo.png"
+            }
+            alt=""
+            className="object-contain h-[30px] md:h-[45px] "
+          />
+        </div>
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => {
@@ -35,14 +45,24 @@ const Header = () => {
           </button>
         </div>
 
-        <Link
-          to={window.location.pathname === "/" ? "data-matrix" : "/"}
-          className="px-2 py-1 rounded-lg border text-[13px]  hover:bg-[#f4f3f3]"
-        >
-          {window.location.pathname === "/"
-            ? "Scan DataMatrix"
-            : "Scan Barcode"}
-        </Link>
+        <div className="flex gap-2">
+          {window.location.pathname !== "/drug-lookup" && (
+            <Link
+              to="/drug-lookup"
+              className="px-2 py-1 rounded-lg border text-[13px]  hover:bg-[#f4f3f3]"
+            >
+              Inventory Lookup
+            </Link>
+          )}
+          <Link
+            to={window.location.pathname === "/" ? "data-matrix" : "/"}
+            className="px-2 py-1 rounded-lg border text-[13px]  hover:bg-[#f4f3f3]"
+          >
+            {window.location.pathname === "/"
+              ? "Scan DataMatrix"
+              : "Scan Barcode"}
+          </Link>
+        </div>
       </div>
 
       <Modal isOpen={isLogout} onClose={() => setIsLogout(false)}>

@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Html5Qrcode, Html5QrcodeScanner } from "html5-qrcode";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import {  useNavigate } from "react-router-dom";
 import api from "../api";
 import NormalInputField from "../components/NormalInputField";
 import NormalSelectInputField from "../components/NormalSelectInputField";
 import { ClipLoader } from "react-spinners";
 import { enqueueSnackbar } from "notistack";
 import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const Barcode = () => {
   const [barcodeData, setBarcodeData] = useState("");
@@ -14,7 +15,6 @@ const Barcode = () => {
   const scannerRef = useRef(null);
   const [drugInfo, setDrugInfo] = useState(null);
   const [fdaInfo, setFdaInfo] = useState("");
-  const [isBarcode, setIsBarcode] = useState(true);
   const [ndc, setNdc] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [po, setPo] = useState("");
@@ -28,21 +28,46 @@ const Barcode = () => {
   const [quantity, setQuantity] = useState("");
   const [gtin, setGtin] = useState("");
   const [unit, setUnit] = useState("");
-  const [price, setPrice] = useState("")
+  const [price, setPrice] = useState("");
+  const [isDrugLoading, setIsDrugLoading] = useState(false)
+  const [inventoryType, setInventoryType] = useState("Medication")
+  const [location, setLocation] = useState("");
+  const [manufacturerName, setManufacturerName] = useState("");
 
   const navigate = useNavigate();
 
+  let userData = sessionStorage.getItem("auth");
 
   useEffect(() => {
-
-  let userData = localStorage.getItem("auth");
-  console.log(userData);
-  if (!userData) {
-    <Navigate to="/login" />;
-  } else {
-    handleScanner();  }
-    
+    if (!userData) {
+      navigate("/login");
+    } else {
+      handleScanner();
+    }
   }, []);
+
+
+  function clearForm(){
+    setBarcodeData("");
+    setError(null);
+    setDrugInfo(null);
+    setFdaInfo("");
+    setNdc("");
+    setPo("");
+    setLot("");
+    setExpiration("");
+    setManufacturer("");
+    setNumOfContainers("");
+    setSerialNumber("");
+    setCoaAdjustment("");
+    setName("");
+    setQuantity("");
+    setGtin("");
+    setUnit("");
+    setPrice("");
+    setLocation("");
+    setManufacturerName("");
+  }
 
   const formatNdcForOpenFda = (ndcCode) => {
     // Remove any existing hyphens
@@ -75,7 +100,7 @@ const Barcode = () => {
     } else {
     }
 
-    //console.log("///////", formattedNdc);
+    ////console.log("///////", formattedNdc);
 
     return formattedNdc;
   };
@@ -98,7 +123,7 @@ const Barcode = () => {
           9
         )}-${trimmedNumStr.slice(9)}`;
       } else {
-        console.log("Invalid NDC code length.");
+        //console.log("Invalid NDC code length.");
       }
       return formattedNdc;
       // Extract characters from index 6 to 15 (7th to 16th characters)
@@ -118,24 +143,19 @@ const Barcode = () => {
       // Start the scanner
 
       function onScanSuccess(decodedText, decodedResult) {
-        console.log(`Code scanned = ${decodedText}`, decodedResult);
+        //console.log(`Code scanned = ${decodedText}`, decodedResult);
 
         setBarcodeData(decodedText);
         fetchBarcodeDrugInfo(decodedResult?.decodedText);
-
-        // if (isBarcode) {
-        //   fetchBarcodeDrugInfo(decodedResult?.decodedText);
-        // } else {
-        //   handleScan(decodedResult?.decodedText);
-        // }
       }
       scannerRef.current = html5QrcodeScanner; // Store the scanner instance
     }
   };
 
   const fetchBarcodeDrugInfo = async (ndcCode) => {
+    setIsDrugLoading(true)
     try {
-      console.log("llll==>>>", ndcCode);
+      //console.log("llll==>>>", ndcCode);
       const response = await fetch(
         `https://api.fda.gov/drug/label.json?search=openfda.package_ndc:${formatNdcForOpenFda(
           ndcCode
@@ -148,66 +168,100 @@ const Barcode = () => {
         setDrugInfo(data.results[0]);
         setName(data.results[0]?.openfda?.brand_name[0]);
         if (scannerRef.current) {
-          scannerRef.current.stop();
+          scannerRef.current.clear();
           scannerRef.current = null;
         }
+        setIsDrugLoading(false)
       } else {
         setFdaInfo(
           `No drug information found for this code.${formatNdcForOpenFda(
             ndcCode
           )}`
         );
+        setIsDrugLoading(false)
       }
     } catch (error) {
       setFdaInfo("Error fetching drug information.");
-      // console.error(error);
+      setIsDrugLoading(false)
+      // //console.error(error);
     }
   };
+   const isButtonNotActive =
+    !name ||
+    // !gtin ||
+    !ndc ||
+    !lot ||
+    // !coaAdjustment ||
+    !expiration ||
+    !serialNumber ||
+    !quantity ||
+    // !unit ||
+    !numOfContainers ||
+    !price ||
+    !po || 
+    !location ||
+    !manufacturerName ||
+    !inventoryType;
 
   async function handleCreateDrug(e) {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await api.createMedication({
-        name,
-        gtin,
-        unit,
+      const response = await api.createMedication(
+          {
+          name,
+          gtin: !gtin ? "NA" : gtin,
         ndc: formatNdcForOpenFda(barcodeData) || ndc,
-        lot,
-        coaAdjustment,
-        expiration,
-        serialNumber,
-        numOfContainers,
-        po,
-        quantity,
-        price
-      });
+          lot,
+          coaAdjustment: !coaAdjustment ? "NA" : coaAdjustment,
+          expiration,
+          serialNumber,
+          quantity,
+          unit: !unit ? "NA" : unit,
+          numOfContainers,
+          po,
+          price,
+          type: inventoryType,
+          location,
+          manufacturer_name: manufacturerName
+        },
+        
+      );
 
       enqueueSnackbar(response.message, { variant: "success" });
       setIsLoading(false);
     } catch (e) {
       enqueueSnackbar(e.message, { variant: "error" });
-      console.error("Error updating applicant: ", e);
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-4">
-     <Header/>
-      <div>
-        <div className="space-y-4">
-         
-
-          <h1 className="text-[28px] md:text-[38px] text-center font-semibold ">
-            {isBarcode ? "Barcode Scanner" : "Data Matrix Scanner"}
+    <div className="max-w-2xl mx-auto p-4 relative  bg-[#fefefe] space-y-6">
+      <Header />
+      <div className="mt-8">
+        <div className=" space-y-">
+          <h1 className="mt-[48px] text-[28px] md:text-[38px] text-center font-semibold ">
+            {"Barcode Scanner"}
           </h1>
           <p className="text-center text-md text-gray-500 mt-1 ">
             {" "}
             Point your camera at a Data Matrix to scan
           </p>
-
+          {drugInfo && !scannerRef.current && (
+            <div className="flex justify-center w-full mb-2">
+              <button
+                className="border px-3 py-1 text-md mx-auto rounded-lg"
+                onClick={() => {
+                  handleScanner();
+                  clearForm();
+                }}
+              >
+                Scan Again
+              </button>
+            </div>
+          )}
           <div
             id="reader"
             style={{ width: "340px", margin: "auto" }}
@@ -216,13 +270,12 @@ const Barcode = () => {
 
           {barcodeData && (
             <>
-              <p>
+              <p className="text-[14px] mt-3">
                 Scanned Barcode: <strong>{barcodeData}</strong>
               </p>
-              <p>{`NDC nUMBER: ${formatNdcForOpenFda(barcodeData)}`}</p>
+              <p className="mt-1 mb-2 text-[14px]">{`NDC Number: ${formatNdcForOpenFda(barcodeData)}`}</p>
             </>
           )}
-       
 
           {error && (
             <p className="text-red-500 text-[14px] leading-3 text-center">
@@ -230,16 +283,21 @@ const Barcode = () => {
             </p>
           )}
 
+          {isDrugLoading && (
+            <div className="flex justify-center items-center gap-2"><ClipLoader color="#00B0AD" size={16} /><p className="text-[#00B0AD] text-[14px] ">Fetching Drug Info...</p></div>
+                          
+
+          )}
+
           {drugInfo && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Drug Information:</h3>
+            <div className="space-y-2 mt-4">
+              <h3 className="text-base font-semibold">Drug Information:</h3>
               <div className="grid grid-cols-2 gap-1 text-[14px] leading-[14px]">
                 <div>Brand Name:</div>
                 <div>{drugInfo?.openfda?.brand_name[0]}</div>
                 <div>Generic Name:</div>
                 <div>{drugInfo?.openfda?.generic_name[0]}</div>
-                {/* <div>Manufacturer:</div>
-              <div>{drugInfo?.openfda?.labeler_name[0]}</div> */}
+                
                 <div>Route:</div>
                 <div>{drugInfo?.openfda?.route[0]}</div>
                 <div>Product Type:</div>
@@ -250,26 +308,55 @@ const Barcode = () => {
         </div>
       </div>
 
+
       <form
         onSubmit={handleCreateDrug}
         className="px-5 py-3 text-[14px] space-y-4 mt-4"
       >
         <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-          <NormalInputField
-            title="Medication Name"
-            isRequired={true}
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+           <NormalSelectInputField 
+              title="Inventory type"
+              values={["Medication", "Supply"]}
+              onChange={(e) => setInventoryType(e.target.value)}
+              isRequired={true}
+              value={inventoryType}
+            />
 
-          <NormalSelectInputField
-            title="Grade"
-            values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
-            value={gtin}
-            onChange={(e) => setGtin(e.target.value)}
-            isRequired={true}
-          />
+            <NormalInputField
+              title={`${inventoryType} Name`}
+              isRequired={true}
+              type="text"
+              onChange={(e) => setName(e.target.value)}
+              value={name}
+            />
+
+            <NormalInputField
+              title={`${inventoryType} Location`}
+              isRequired={true}
+              type="text"
+              onChange={(e) => setLocation(e.target.value)}
+              value={location}
+            />
+
+            <NormalInputField
+              title="Manufacturer Name"
+              isRequired={true}
+              type="text"
+              onChange={(e) => setManufacturerName(e.target.value)}
+              value={manufacturerName}
+            />
+         
+
+         {
+              inventoryType === "Supply" ? null :
+              <NormalSelectInputField 
+                title="Grade"
+                values={["USP", "FCC", "NF", "BP", "EP", "JP"]}
+                onChange={(e) => setGtin(e.target.value)}
+                isRequired={true}
+                value={gtin}
+              />
+            }
           <NormalInputField
             title="NDC"
             isRequired={true}
@@ -308,45 +395,62 @@ const Barcode = () => {
           <NormalInputField
             title="Quantity"
             isRequired={true}
-            type="number"
+            type="text"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
           />
           <NormalInputField
-            title="Number of containers"
-            isRequired={true}
-            type="number"
-            value={numOfContainers}
-            onChange={(e) => setNumOfContainers(e.target.value)}
-          />
- <NormalInputField
-            title="Price"
+            title="Price ($)"
             isRequired={true}
             type="text"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
-          <NormalSelectInputField
-            onChange={(e) => setUnit(e.target.value)}
-            title="Select unit"
-            isRequired={true}
-            value={unit}
-            values={["GM", "MG", "MCG", "ML"]}
-          />
-          <NormalInputField
-            title="CoA Adjustment %"
-            isRequired={true}
-            type="number"
-            value={coaAdjustment}
-            onChange={(e) => setCoaAdjustment(e.target.value)}
-          />
+
+          {
+            !inventoryType === "Supply" &&
+            <NormalSelectInputField 
+                onChange={(e) => setUnit(e.target.value)}
+                title="Select unit"
+                isRequired={true}
+                values={[
+                  "GM",
+                  "MG",
+                  "MCG",
+                  "ML"
+                ]}
+                value={unit}
+              />
+          }
+        
 
           <NormalInputField
-            title="CoA Document"
-            isRequired={false}
-            type="file"
-            onChange={(e) => setCoaAdjustment(e.target.value)}
+            title="Number of containers / boxes"
+            isRequired={true}
+            type="number"
+            value={numOfContainers}
+            onChange={(e) => setNumOfContainers(e.target.value)}
           />
+
+           {
+              inventoryType === "Supply" ? null :
+              <>
+                <NormalInputField
+                  title="CoA Adjustment %"
+                  isRequired={true}
+                  type="text"
+                  onChange={(e) => setCoaAdjustment(e.target.value)}
+                  value={coaAdjustment}
+                />
+
+                <NormalInputField
+                  title="CoA Document"
+                  isRequired={false}
+                  type="file"
+                // onChange={(e) => setCoaAdjustment(e.target.value)}
+                />
+              </>
+            }
         </div>
         <div className="mt-4">
           <div className="text-[14px] font-semibold py-1 text-red-500">
@@ -356,16 +460,17 @@ const Barcode = () => {
           <button
             className="bg-[#00B0AD] py-3 px-3 disabled:cursor-not-allowed disabled:bg-primary-light disabled:text-primary shadow-md font-semibold flex items-center justify-center text-white rounded-[8px] text-[14px]"
             type={"submit"}
-            // disabled={isLoading}
+          disabled={isLoading || isButtonNotActive}
           >
             {isLoading ? (
               <ClipLoader color="white" size={16} />
             ) : (
-              "Add Medication +"
+              `Add ${inventoryType === "Supply" ? "Supply" : "Medication"} +`
             )}
           </button>
         </div>
       </form>
+      <Footer />
     </div>
   );
 };
