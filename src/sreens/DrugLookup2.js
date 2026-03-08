@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { ClipLoader } from "react-spinners";
@@ -11,59 +11,34 @@ const DrugLookup = () => {
   const [scannedCode, setScannedCode] = useState("");
   const [drugDetails, setDrugDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const videoRef = useRef(null);
-  const readerRef = useRef(null);
+  const scannerRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const userData = sessionStorage.getItem("auth");
     if (!userData) {
       navigate("/login");
-      return;
+    } else {
+      handleScanner();
     }
-    startScanning();
-    return () => stopScanning();
   }, []);
 
-  const startScanning = async () => {
-    if (!videoRef.current || readerRef.current) return;
-
-    try {
-      const reader = new BrowserMultiFormatReader();
-      readerRef.current = reader;
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }
+  const handleScanner = () => {
+    if (!scannerRef.current) {
+      const html5QrcodeScanner = new Html5QrcodeScanner("reader", {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        formatsToSupport: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
       });
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
-
-      const scan = async () => {
-        if (!readerRef.current || !videoRef.current) return;
-        try {
-          const result = await reader.decodeOnce(videoRef.current);
-          if (result) {
-            setScannedCode(result.getText());
-            fetchDrugDetails(result.getText());
-            stopScanning();
-          }
-        } catch (err) {
-          if (readerRef.current) {
-            setTimeout(scan, 100);
-          }
-        }
-      };
-      scan();
-    } catch (err) {
-      enqueueSnackbar("Camera access denied", { variant: "error" });
+      
+      html5QrcodeScanner.render(onScanSuccess);
+      scannerRef.current = html5QrcodeScanner;
     }
   };
 
-  const stopScanning = () => {
-    if (videoRef.current?.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
-    }
-    readerRef.current = null;
+  const onScanSuccess = (decodedText) => {
+    setScannedCode(decodedText);
+    fetchDrugDetails(decodedText);
   };
 
   const fetchDrugDetails = async (drugId) => {
@@ -72,6 +47,11 @@ const DrugLookup = () => {
       const response = await api.getDrugDetails({ drugId });
       setDrugDetails(response[0]);
       enqueueSnackbar("Drug details fetched successfully", { variant: "success" });
+      
+      if (scannerRef.current) {
+        scannerRef.current.clear();
+        scannerRef.current = null;
+      }
     } catch (error) {
       enqueueSnackbar(error.message || "Error fetching drug details", { variant: "error" });
     } finally {
@@ -82,7 +62,7 @@ const DrugLookup = () => {
   const handleScanAgain = () => {
     setScannedCode("");
     setDrugDetails(null);
-    startScanning();
+    handleScanner();
   };
 
   return (
@@ -96,7 +76,7 @@ const DrugLookup = () => {
           Scan barcode to view inventory details
         </p>
 
-        {drugDetails && (
+        {drugDetails && !scannerRef.current && (
           <div className="flex justify-center w-full mb-2">
             <button
               className="border px-3 py-1 text-md mx-auto rounded-lg"
@@ -107,16 +87,11 @@ const DrugLookup = () => {
           </div>
         )}
 
-        <div className="flex justify-center">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{ width: "340px", height: "340px", objectFit: "cover" }}
-            className="border rounded-lg border-gray-300"
-          />
-        </div>
+        <div
+          id="reader"
+          style={{ width: "340px", margin: "auto" }}
+          className="p-2 border rounded-lg border-gray-300"
+        ></div>
 
         {scannedCode && (
           <p className="text-[14px] mt-3 text-center">
@@ -131,7 +106,7 @@ const DrugLookup = () => {
           </div>
         )}
 
-         {drugDetails && (
+        {drugDetails && (
           <div className="mt-6 bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-3 md:p-6 shadow-lg">
             <h3 className="text-lg md:text-xl font-bold mb-6 text-gray-800 border-b pb-3">{drugDetails.name}</h3>
             
